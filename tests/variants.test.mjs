@@ -9,7 +9,7 @@ test('the Vue adapter exposes optional variants and scoped appearance', () => {
   for (const variation of ['floating', 'minimal', 'compact', 'spotlight', 'cinematic']) {
     assert.match(component + css, new RegExp(`naviox-variant-${variation}|variant: \\{ type:`));
   }
-  assert.match(component, /style: resolvedTheme\.value\.style/);
+  assert.match(component, /style: dialogStyle\.value/);
   assert.match(component, /data-naviox-theme/);
   assert.match(component, /window\.matchMedia/);
   assert.match(component, /removeEventListener\?\.\('change', onSchemeChange\)/);

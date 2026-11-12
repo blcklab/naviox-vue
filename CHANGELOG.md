@@ -1,3 +1,17 @@
+## 0.1.0-alpha.16 — Palette anatomy and native result visuals
+
+- Added typed `anatomy` and `visuals` options for the default palette, with colored icon tiles, image thumbnails, monograms, badges, controllable row geometry and preview anatomy.
+- Added more built-in icon shapes and stable semantic `data-naviox-part` hooks.
+- Preserved existing slots/render callbacks and the published core dependency without a breaking change.
+- Added [Palette anatomy guide](docs/palette-anatomy.md). Not yet published; full framework builds require registry access.
+
+## 0.1.0-alpha.16 — Palette composition and backdrop controls (unpublished)
+
+- Search top/bottom/custom placement, divider and surface style.
+- Blur, dim-only, or transparent backdrop options; preview left/right/bottom.
+- Public search/item icon rendering hooks and appearance design tokens.
+- Backward compatible with the previous adapter API and unchanged Naviox core.
+
 # Changelog
 
 Changes worth knowing about when using Naviox Vue. For detailed milestone history, see the maintainers' internal notes.

@@ -4,7 +4,7 @@ Beautiful, accessible-minded command and navigation components for **Vue 3**. Po
 
 Includes a keyboard-first **command palette**, a **preview-rich mega-menu**, and an **autocomplete**. Keep the minimalist Ink theme, use soft Sakura or cinematic Nocturne, or bring your own colors and content.
 
-Version: `@blcklab/naviox-vue@0.1.0-alpha.14` (prerelease).
+Version: `@blcklab/naviox-vue@0.1.0-alpha.16` (prerelease).
 
 ## Install
 
@@ -67,3 +67,11 @@ Each adapter has its own repository, releases and workflow. MIT · BLCK LAB.
 The M8.6 release adds an inline, composable command UI alongside `NavioxPalette`. Use `NavioxCommand`/`NavioxRoot` with `NavioxCommandInput`, `NavioxCommandList`, `NavioxCommandGroup`, `NavioxCommandItem`, `NavioxCommandEmpty`, `NavioxCommandLoading`, `NavioxCommandSeparator`, and `NavioxCommandShortcut`. See the [primitives guide](docs/composable-command.md).
 
 For full customization, supply `theme="ink"` for a modern neutral look, choose `sakura` or `nocturne`, or override design tokens. Vim navigation, group jumps, RTL direction and force-mounted items are opt-in.
+
+## Flexible palette composition (next prerelease)
+
+You can move the search bar, remove its divider, disable backdrop blur, and reposition the preview panel without changing the core. See [palette composition](docs/palette-composition.md) for all props, slots and styling tokens.
+
+## Custom result rows and preview anatomy
+
+See [Palette anatomy](docs/palette-anatomy.md) for native colored icon tiles, thumbnails, search placement, row geometry, preview visibility and responsive styling controls.

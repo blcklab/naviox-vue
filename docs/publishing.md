@@ -1,6 +1,6 @@
 # Publish this adapter
 
-The Vue and React adapters have **independent repositories and version numbers**. This guide applies to `@blcklab/naviox-vue@0.1.0-alpha.14`. The headless core `@blcklab/naviox@0.1.0-alpha.7` must be available on npm before installing this repository's dependencies.
+The Vue and React adapters have **independent repositories and version numbers**. This guide applies to `@blcklab/naviox-vue@0.1.0-alpha.16`. The headless core `@blcklab/naviox@0.1.0-alpha.7` must be available on npm before installing this repository's dependencies.
 
 ## Prepare
 
@@ -32,10 +32,10 @@ Configure a GitHub Actions environment named `npm` and the `NPM_TOKEN` secret wi
 
 ```bash
 git add .
-git commit -m "Prepare @blcklab/naviox-vue 0.1.0-alpha.14"
+git commit -m "Prepare @blcklab/naviox-vue 0.1.0-alpha.16"
 git push origin master
-git tag v0.1.0-alpha.14
-git push origin v0.1.0-alpha.14
+git tag v0.1.0-alpha.16
+git push origin v0.1.0-alpha.16
 ```
 
 The GitHub workflow performs the publication; there are no local version-bump or release scripts. If that version was already published, bump `package.json` before tagging—the npm registry doesn't permit overwriting a published version.

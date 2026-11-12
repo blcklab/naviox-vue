@@ -2,7 +2,7 @@
 
 This release uses:
 
-- Adapter: `@blcklab/naviox-vue@0.1.0-alpha.14` (prerelease)
+- Adapter: `@blcklab/naviox-vue@0.1.0-alpha.16` (prerelease)
 - Headless core: `@blcklab/naviox@0.1.0-alpha.7` (normal dependency)
 - Framework: Vue 3.5 or newer (peer dependency)
 - Node.js 20 or later for development and build tools

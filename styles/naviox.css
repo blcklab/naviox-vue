@@ -45,24 +45,43 @@
 }
 .naviox-dialog.naviox-theme-nocturne { color-scheme:dark; }
 .naviox-dialog.naviox-size-wide { width:min(1000px,calc(100vw - 28px)); }
-.naviox-dialog::backdrop { background:rgba(23,20,32,.53); backdrop-filter:blur(11px) saturate(.75); }
+.naviox-dialog::backdrop { background:var(--nx-backdrop-bg, rgba(23,20,32,.53)); backdrop-filter:var(--nx-backdrop-filter, blur(var(--nx-backdrop-blur, 11px)) saturate(.75)); }
 .naviox-dialog[open] { animation:naviox-rise .24s cubic-bezier(.19,.82,.28,1) both; }
 .naviox-shell { height:100%; display:flex; flex-direction:column; position:relative; min-height:0; background:var(--nx-surface); }
 .naviox-shell::before { content:""; height:2px; position:absolute; top:0; left:11%; right:11%; z-index:5; background:linear-gradient(90deg,transparent,rgba(var(--nx-accent-rgb),.53),transparent); }
-.naviox-searchbar { display:flex; align-items:center; flex:0 0 76px; border-bottom:1px solid var(--nx-border); gap:15px; padding:0 25px; }
+.naviox-searchbar { display:flex; align-items:center; flex:0 0 var(--nx-search-height, 76px); border-bottom:1px solid var(--nx-search-border, var(--nx-border)); gap:15px; padding:0 var(--nx-search-padding, 25px); background:var(--nx-search-surface, transparent); }
 .naviox-search-icon { color:var(--nx-accent); display:flex; }
-.naviox-search-input { font-family:var(--nx-font); font-size:16px; font-weight:420; min-width:0; flex:1; padding:17px 0; border:0; outline:0; box-shadow:none; background:transparent; color:var(--nx-text); caret-color:var(--nx-accent); }
+.naviox-search-input { font-family:var(--nx-font); font-size:var(--nx-search-font-size, 16px); font-weight:420; min-width:0; flex:1; padding:17px 0; border:0; outline:0; box-shadow:none; background:transparent; color:var(--nx-text); caret-color:var(--nx-accent); }
 .naviox-search-input::placeholder { color:var(--nx-muted); opacity:1; }
 .naviox-search-input::-webkit-search-cancel-button { display:none; }
 .naviox-dialog .naviox-search-input:focus-visible { outline:none; }
 /* Retain a visible keyboard focus cue without drawing a heavy input outline. */
 .naviox-dialog .naviox-searchbar:focus-within { box-shadow: inset 0 -2px 0 rgba(var(--nx-accent-rgb), .62); }
+
+/* Public palette anatomy and geometry controls; no selector knowledge needed by consumers. */
+.naviox-dialog.naviox-search-bottom .naviox-searchbar { order: 4; border-bottom: 0; border-top: 1px solid var(--nx-search-border, var(--nx-border)); }
+.naviox-dialog.naviox-search-bottom .naviox-searchbar:focus-within { box-shadow: inset 0 2px 0 rgba(var(--nx-accent-rgb), .62); }
+.naviox-dialog.naviox-search-no-divider .naviox-searchbar { border: 0; }
+.naviox-dialog.naviox-search-no-divider .naviox-searchbar:focus-within { box-shadow: inset 0 0 0 1px rgba(var(--nx-accent-rgb), .35); }
+.naviox-dialog.naviox-search-filled .naviox-searchbar { background:var(--nx-search-surface, var(--nx-hover)); }
+.naviox-dialog.naviox-search-outlined .naviox-searchbar { margin: 10px; border: 1px solid var(--nx-search-border, var(--nx-border)); border-radius: min(var(--nx-radius, 14px), 14px); flex-basis: max(44px, calc(var(--nx-search-height, 76px) - 12px)); }
+.naviox-dialog.naviox-search-outlined.naviox-search-bottom .naviox-searchbar { order:4; }
+.naviox-dialog.naviox-search-outlined.naviox-search-no-divider .naviox-searchbar { border: 0; }
+.naviox-dialog.naviox-preview-left .naviox-layout { grid-template-columns:minmax(0,var(--nx-preview-width, 45%)) minmax(0,1fr); }
+.naviox-dialog.naviox-preview-left .naviox-preview { order: -1; border-left: 0; border-right: 1px solid var(--nx-border); }
+.naviox-dialog.naviox-preview-bottom .naviox-layout { display: flex; flex-direction: column; }
+.naviox-dialog.naviox-preview-bottom .naviox-results-pane { flex: 1 1 auto; min-height: 0; }
+.naviox-dialog.naviox-preview-bottom .naviox-preview { flex: 0 1 38%; min-height: 130px; border-left: 0; border-top: 1px solid var(--nx-border); }
+.naviox-dialog.naviox-search-bottom .naviox-layout { order:1; }
+.naviox-dialog.naviox-search-bottom .naviox-progress, .naviox-dialog.naviox-search-bottom .naviox-error { order:2; }
+.naviox-dialog.naviox-search-bottom .naviox-footer { order:5; }
+
 .naviox-clear,.naviox-dismiss { border:0; cursor:pointer; display:flex; align-items:center;justify-content:center; background:transparent;color:var(--nx-muted); }
 .naviox-clear { padding:7px; border-radius:7px; }
 .naviox-clear:hover,.naviox-dismiss:hover { background:var(--nx-hover); }
 .naviox-dismiss { padding:5px; border:1px solid var(--nx-border); border-radius:7px; }
 .naviox-dismiss kbd { font-size:10px; color:var(--nx-muted); }
-.naviox-layout { display:grid; grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr); flex:1; min-height:0; }
+.naviox-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,var(--nx-preview-width, 45%)); flex:1; min-height:0; }
 .naviox-no-preview .naviox-layout { grid-template-columns:minmax(0,1fr); }
 .naviox-results-pane { min-width:0; min-height:0; display:flex; flex-direction:column; padding:20px 13px 14px 20px; }
 .naviox-breadcrumbs { display:flex; flex-wrap:wrap; gap:4px; align-items:center; padding:0 7px 14px; color:var(--nx-muted); font-size:11px; }
@@ -331,3 +350,45 @@
 .naviox-dialog[dir="rtl"] .naviox-preview {border-left:0;border-right:1px solid var(--nx-border);}
 .naviox-mount[dir="rtl"] .naviox-mega-link-arrow {transform:scaleX(-1);}
 .naviox-mount[dir="rtl"] .naviox-auto-panel {inset-inline:0;}
+
+/* Allow a bottom preview on small screens without clipping search or footer. */
+@media (max-width: 640px) {
+  .naviox-dialog.naviox-preview-bottom .naviox-preview { min-height: 110px; max-height: 40%; }
+  .naviox-dialog.naviox-search-bottom .naviox-searchbar { order: 4; }
+}
+
+/* Public anatomy tokens. These apply to the standard palette only; custom slots may
+   replace its markup entirely. No global stylesheet/reset or font is injected. */
+.naviox-dialog .naviox-searchbar { gap:var(--nx-search-gap,15px); }
+.naviox-dialog .naviox-searchbar.naviox-search-icon-end .naviox-search-icon {order:1;}
+.naviox-dialog .naviox-searchbar.naviox-search-icon-end :is(.naviox-clear,.naviox-dismiss) {order:2;}
+.naviox-dialog .naviox-item {
+  min-height:var(--nx-row-height,58px);padding:var(--nx-row-padding,9px 11px);
+  gap:var(--nx-row-gap,12px);border-radius:var(--nx-row-radius,11px);
+}
+.naviox-dialog .naviox-item-icon {
+  width:var(--nx-item-icon-size,37px);height:var(--nx-item-icon-size,37px);
+  overflow:hidden;isolation:isolate;
+}
+.naviox-dialog .naviox-item-icon[data-naviox-shape="circle"] {border-radius:50%;}
+.naviox-dialog .naviox-item-icon[data-naviox-shape="square"] {border-radius:2px;}
+.naviox-dialog .naviox-item-icon[data-naviox-mode="plain"] {background:transparent;border-color:transparent;}
+.naviox-dialog .naviox-item-icon[data-naviox-mode="outline"] {background:transparent;}
+.naviox-dialog .naviox-item-icon[data-naviox-mode="thumbnail"] {padding:0;}
+.naviox-dialog .naviox-item-icon img {width:100%;height:100%;display:block;object-fit:cover;}
+.naviox-dialog .naviox-item-icon-monogram {font-weight:700;font-size:clamp(10px,1.1vw,15px);line-height:1;}
+.naviox-dialog .naviox-item-badge {font:10px var(--nx-mono);color:var(--nx-muted);white-space:nowrap;flex:none;}
+.naviox-dialog .naviox-preview {padding:var(--nx-preview-padding,22px);}
+.naviox-dialog .naviox-art {aspect-ratio:var(--nx-preview-art-ratio,1.72);}
+.naviox-dialog.naviox-variant-compact .naviox-art {aspect-ratio:var(--nx-preview-art-ratio,1.9);}
+.naviox-dialog.naviox-variant-cinematic .naviox-art {aspect-ratio:var(--nx-preview-art-ratio,1.64);}
+.naviox-dialog .naviox-art img {object-fit:var(--nx-preview-image-fit,cover);}
+.naviox-dialog .naviox-preview-title {font-family:var(--nx-preview-title-font,var(--nx-serif));}
+/* Component variants may choose different defaults; explicit anatomy tokens win. */
+.naviox-dialog.naviox-variant-compact .naviox-item {min-height:var(--nx-row-height,45px);padding:var(--nx-row-padding,5px 9px);gap:var(--nx-row-gap,9px);}
+.naviox-dialog.naviox-variant-compact .naviox-item-icon {width:var(--nx-item-icon-size,30px);height:var(--nx-item-icon-size,30px);}
+.naviox-dialog.naviox-density-compact .naviox-item {min-height:var(--nx-row-height,44px);}
+.naviox-dialog.naviox-density-compact .naviox-item-icon {width:var(--nx-item-icon-size,31px);height:var(--nx-item-icon-size,31px);}
+@media(max-width:640px){.naviox-dialog .naviox-item{min-height:var(--nx-row-height,56px);}}
+
+.naviox-dialog.naviox-variant-compact .naviox-preview {padding:var(--nx-preview-padding,15px);}

@@ -6,7 +6,7 @@ const read = (p) => readFileSync(new URL('../'+p, import.meta.url), 'utf8');
 const pkg = JSON.parse(read('package.json'));
 test('M8.3 source candidate and docs identify the current package', () => {
   assert.equal(pkg.name, "@blcklab/naviox-vue");
-  assert.equal(pkg.version, "0.1.0-alpha.14");
+  assert.equal(pkg.version, "0.1.0-alpha.16");
   assert.ok(read('README.md').includes(pkg.version));
   assert.ok(read('README.md').includes('docs/public-api.md'));
 });

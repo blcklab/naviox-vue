@@ -2,6 +2,11 @@
 export type NavioxBuiltInTheme = 'ink' | 'sakura' | 'nocturne';
 export type NavioxThemeName = NavioxBuiltInTheme | 'system' | (string & {});
 export type NavioxPaletteVariant = 'floating' | 'minimal' | 'compact' | 'spotlight' | 'cinematic';
+/** Where the default search bar is rendered in a palette. Custom requires the content renderer to place `search`. */
+export type NavioxSearchPosition = 'top' | 'bottom' | 'custom';
+export type NavioxSearchStyle = 'plain' | 'filled' | 'outlined';
+export type NavioxBackdrop = 'blur' | 'dim' | 'none';
+export type NavioxPreviewPlacement = 'right' | 'left' | 'bottom';
 export type NavioxColorScheme = 'light' | 'dark';
 
 /** Public names deliberately do not expose internal CSS selectors. */
@@ -25,6 +30,11 @@ export interface NavioxThemeTokens {
   artEnd: string;
   artLine: string;
   shadow: string;
+  /** Surface and border color of the search bar; supports any valid CSS color. */
+  searchSurface?: string;
+  searchBorder?: string;
+  /** Base color behind an open modal; set backdrop="none" to make it transparent. */
+  backdropColor?: string;
 }
 
 export interface NavioxThemeDefinition {
@@ -40,6 +50,15 @@ export interface NavioxAppearance {
   fontFamily?: string;
   density?: 'comfortable' | 'compact';
   motion?: 'system' | 'reduced';
+  /** CSS design tokens; work in both adapter defaults and custom flavors. */
+  searchBackground?: string;
+  searchBorderColor?: string;
+  searchHeight?: string;
+  searchFontSize?: string;
+  searchPadding?: string;
+  previewWidth?: string;
+  backdropColor?: string;
+  backdropBlur?: string;
 }
 
 export interface NavioxSystemThemes {
@@ -58,7 +77,7 @@ const names: Readonly<Record<keyof NavioxThemeTokens, string>> = {
   hover: '--nx-hover', selected: '--nx-selected', accent: '--nx-accent',
   accentRgb: '--nx-accent-rgb', accentText: '--nx-accent-text',
   artStart: '--nx-art-start', artEnd: '--nx-art-end', artLine: '--nx-art-line',
-  shadow: '--nx-shadow',
+  shadow: '--nx-shadow', searchSurface: '--nx-search-surface', searchBorder: '--nx-search-border', backdropColor: '--nx-backdrop-bg',
 };
 
 /** Registers nothing globally; return a typed theme for a component's `themes` prop. */
@@ -114,6 +133,16 @@ export function resolveNavioxTheme(input: {
   }
   if (input.appearance?.fontFamily) style['--nx-font'] = input.appearance.fontFamily;
   if (input.appearance?.radius) style['--nx-radius'] = input.appearance.radius;
+  const appearanceTokens: Record<string, string> = {
+    searchBackground: '--nx-search-surface', searchBorderColor: '--nx-search-border',
+    searchHeight: '--nx-search-height', searchFontSize: '--nx-search-font-size',
+    searchPadding: '--nx-search-padding', previewWidth: '--nx-preview-width',
+    backdropColor: '--nx-backdrop-bg', backdropBlur: '--nx-backdrop-blur',
+  };
+  for (const [name, variable] of Object.entries(appearanceTokens)) {
+    const value = input.appearance?.[name as keyof NavioxAppearance];
+    if (value) style[variable] = value;
+  }
   const colorScheme = definition?.colorScheme ?? (name === 'nocturne' ? 'dark' : 'light');
   style.colorScheme = colorScheme;
   return { name, colorScheme, style };

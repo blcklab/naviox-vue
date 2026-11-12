@@ -13,7 +13,9 @@ import { icon } from '../internal/icons.js';
 import { safeNavigationHref } from '../internal/urls.js';
 import { wrapModalTabFocus } from '../internal/focus.js';
 import { defaultSystemThemes, navioxThemeClass, resolveNavioxTheme } from '../theme.js';
-import type { NavioxAppearance, NavioxPaletteVariant, NavioxSystemThemes, NavioxThemeDefinition, NavioxThemeName } from '../theme.js';
+import { resolveNavioxAnatomyStyle } from '../anatomy.js';
+import type { NavioxPaletteAnatomy, NavioxItemVisual } from '../anatomy.js';
+import type { NavioxAppearance, NavioxPaletteVariant, NavioxSystemThemes, NavioxThemeDefinition, NavioxThemeName, NavioxSearchPosition, NavioxSearchStyle, NavioxBackdrop, NavioxPreviewPlacement } from '../theme.js';
 
 export type NavioxPaletteTheme = NavioxThemeName;
 
@@ -27,12 +29,25 @@ export interface NavioxPaletteProps {
   shortcut?: string;
   showTrigger?: boolean;
   preview?: boolean;
+  /** Search bar location; custom delegates placement to a #header or #content slot's `search` VNode. */
+  searchPosition?: NavioxSearchPosition;
+  searchDivider?: boolean;
+  searchStyle?: NavioxSearchStyle;
+  showSearchIcon?: boolean;
+  showDismiss?: boolean;
+  /** Modal backdrop. dim has no blur; none has neither blur nor dimming. */
+  backdrop?: NavioxBackdrop;
+  previewPlacement?: NavioxPreviewPlacement;
   theme?: NavioxPaletteTheme;
   /** Named, per-instance theme definitions; no global registration. */
   themes?: Readonly<Record<string, NavioxThemeDefinition>>;
   /** Reactively follow light/dark OS preference when theme='system'. */
   systemThemes?: NavioxSystemThemes;
   appearance?: NavioxAppearance;
+  /** Public default component anatomy (slots can still replace whole regions). */
+  anatomy?: NavioxPaletteAnatomy;
+  /** Item-id keyed icon treatments and badges. Does not modify core command data. */
+  visuals?: Readonly<Record<string, NavioxItemVisual>>;
   variant?: NavioxPaletteVariant;
   size?: 'regular' | 'wide';
   dir?: 'ltr' | 'rtl';
@@ -67,10 +82,19 @@ export const NavioxPalette = defineComponent({
     shortcut: { type: String, default: 'Mod+K' },
     showTrigger: { type: Boolean, default: true },
     preview: { type: Boolean, default: true },
+    searchPosition: { type: String as PropType<NavioxSearchPosition>, default: 'top' },
+    searchDivider: { type: Boolean, default: true },
+    searchStyle: { type: String as PropType<NavioxSearchStyle>, default: 'plain' },
+    showSearchIcon: { type: Boolean, default: true },
+    showDismiss: { type: Boolean, default: true },
+    backdrop: { type: String as PropType<NavioxBackdrop>, default: 'blur' },
+    previewPlacement: { type: String as PropType<NavioxPreviewPlacement>, default: 'right' },
     theme: { type: String as PropType<NavioxPaletteTheme>, default: 'ink' },
     themes: { type: Object as PropType<Readonly<Record<string, NavioxThemeDefinition>>>, default: undefined },
     systemThemes: { type: Object as PropType<NavioxSystemThemes>, default: () => defaultSystemThemes },
     appearance: { type: Object as PropType<NavioxAppearance>, default: undefined },
+    anatomy: { type: Object as PropType<NavioxPaletteAnatomy>, default: undefined },
+    visuals: { type: Object as PropType<Readonly<Record<string, NavioxItemVisual>>>, default: undefined },
     variant: { type: String as PropType<NavioxPaletteVariant>, default: 'floating' },
     size: { type: String as PropType<'regular' | 'wide'>, default: 'regular' },
     dir: { type: String as PropType<'ltr' | 'rtl'>, default: 'ltr' },
@@ -118,7 +142,18 @@ export const NavioxPalette = defineComponent({
       `naviox-variant-${props.variant}`,
       `naviox-density-${props.appearance?.density ?? 'comfortable'}`,
       props.appearance?.motion === 'reduced' && 'naviox-motion-reduced',
+      `naviox-search-${props.searchPosition}`,
+      !props.searchDivider && 'naviox-search-no-divider',
+      `naviox-search-${props.searchStyle}`,
+      `naviox-preview-${props.previewPlacement}`,
     ]);
+    const dialogStyle = computed(() => ({
+      ...resolvedTheme.value.style,
+      ...resolveNavioxAnatomyStyle(props.anatomy),
+      '--nx-backdrop-filter': props.backdrop === 'blur'
+        ? 'blur(var(--nx-backdrop-blur, 11px)) saturate(.75)' : 'none',
+      ...(props.backdrop === 'none' ? { '--nx-backdrop-bg': 'transparent' } : {}),
+    }));
     let themeMedia: MediaQueryList | null = null;
     const onSchemeChange = (event: MediaQueryListEvent) => { prefersDark.value = event.matches; };
     const dialog = ref<HTMLDialogElement | null>(null);
@@ -264,6 +299,28 @@ export const NavioxPalette = defineComponent({
       if (focusBefore.value?.isConnected) focusBefore.value.focus({ preventScroll: true });
     });
 
+    function renderItemIcon(item: NavioxItem, snapshot: NavioxState, active: boolean): VNode {
+      const visual = props.visuals?.[item.id];
+      const mode = visual?.mode ?? 'tile';
+      const shape = props.anatomy?.row?.iconShape ?? 'rounded';
+      const content = slots.itemIcon?.({ item, state: snapshot, active }) ?? (
+        visual?.image && (mode === 'thumbnail' || mode === 'tile')
+          ? [h('img', { src: visual.image, alt: visual.imageAlt ?? '', loading: 'lazy' })]
+          : mode === 'monogram' || (visual?.monogram && !visual?.icon)
+            ? [h('span', { class: 'naviox-item-icon-monogram' }, (visual?.monogram ?? item.title.slice(0, 1)).slice(0, 4))]
+            : [icon(visual?.icon ?? (item.href ? 'link' : item.kind === 'command' ? 'command' : 'folder'), 17)]
+      );
+      return h('span', {
+        class: 'naviox-item-icon', 'data-naviox-part': 'icon', 'data-naviox-mode': mode,
+        'data-naviox-shape': shape,
+        style: {
+          ...(visual?.background && mode !== 'plain' && mode !== 'outline' ? { background: visual.background } : {}),
+          ...(visual?.foreground ? { color: visual.foreground } : {}),
+          ...(visual?.borderColor ? { borderColor: visual.borderColor } : {}),
+        },
+      }, content);
+    }
+
     function renderOption(item: NavioxItem, snapshot: NavioxState): VNode {
       const active = snapshot.activeId === item.id;
       const chosen = slots.item?.({ item, state: snapshot, active, activate: () => activate(item) }) as VNodeChild | undefined;
@@ -272,19 +329,21 @@ export const NavioxPalette = defineComponent({
         'aria-selected': active ? 'true' : 'false',
         'aria-disabled': item.disabled || item.readOnly ? 'true' : undefined,
         class: ['naviox-item', active && 'is-active', (item.disabled || item.readOnly) && 'is-disabled'],
+        'data-naviox-part': 'item',
         onPointerenter: (event: PointerEvent) => { if (event.pointerType !== 'touch') controller.setActive(item.id); },
         onMousedown: (event: MouseEvent) => event.preventDefault(),
         onClick: () => { if (!item.disabled && !item.readOnly) activate(item); },
       }, chosen ?? [
-        h('span', { class: 'naviox-item-icon' }, [icon(item.href ? 'link' : item.kind === 'command' ? 'command' : 'folder', 17)]),
+        renderItemIcon(item, snapshot, active),
         h('span', { class: 'naviox-item-copy' }, [
           h('span', { class: 'naviox-item-title' }, item.title),
-          item.description && h('span', { class: 'naviox-item-desc' }, item.description),
+          props.anatomy?.row?.showDescription !== false && item.description && h('span', { class: 'naviox-item-desc' }, item.description),
         ]),
-        isPinned(item) && h('span', { class: 'naviox-mark', title: 'Pinned' }, [icon('pin', 12)]),
-        isFavorite(item) && h('span', { class: 'naviox-mark', title: 'Favorite' }, [icon('star', 12)]),
-        item.shortcuts?.[0] && h('kbd', { class: 'naviox-keycap naviox-item-shortcut' }, item.shortcuts[0]),
-        h('span', { class: 'naviox-item-tail' }, [icon('chevron', 15)]),
+        props.anatomy?.row?.showMarkers !== false && isPinned(item) && h('span', { class: 'naviox-mark', title: 'Pinned' }, [icon('pin', 12)]),
+        props.anatomy?.row?.showMarkers !== false && isFavorite(item) && h('span', { class: 'naviox-mark', title: 'Favorite' }, [icon('star', 12)]),
+        props.anatomy?.row?.showBadge !== false && props.visuals?.[item.id]?.badge && h('span', { class: 'naviox-item-badge' }, props.visuals[item.id]!.badge),
+        props.anatomy?.row?.showShortcut !== false && item.shortcuts?.[0] && h('kbd', { class: 'naviox-keycap naviox-item-shortcut' }, item.shortcuts[0]),
+        props.anatomy?.row?.showTail !== false && h('span', { class: 'naviox-item-tail' }, [icon('chevron', 15)]),
       ]);
     }
 
@@ -295,13 +354,14 @@ export const NavioxPalette = defineComponent({
           'aside',
           {
             class: 'naviox-preview',
+            'data-naviox-part': 'preview',
             'aria-label': 'Selected item preview'
           },
           custom ?? undefined
         );
       }
-      return h('aside', { class: 'naviox-preview', 'aria-label': 'Selected item preview' }, item ? [
-        h('div', { class: ['naviox-art', !item.preview?.image && 'naviox-art-generated'] }, [
+      return h('aside', { class: 'naviox-preview', 'data-naviox-part': 'preview', 'aria-label': 'Selected item preview' }, item ? [
+        props.anatomy?.preview?.showArtwork !== false && h('div', { class: ['naviox-art', !item.preview?.image && 'naviox-art-generated'], 'data-naviox-part': 'preview-art' }, [
           item.preview?.image
             ? h('img', { src: item.preview.image, alt: item.preview.imageAlt ?? `Preview: ${item.title}`, loading: 'lazy' })
             : h('div', { class: 'naviox-art-symbol', 'aria-hidden': 'true' }, [
@@ -313,14 +373,39 @@ export const NavioxPalette = defineComponent({
         h('div', { class: 'naviox-preview-heading' }, [
           h('span', { class: 'naviox-eyebrow' }, item.kind ?? item.group ?? 'Selected'),
           h('h3', { class: 'naviox-preview-title' }, item.title),
-          h('p', { class: 'naviox-preview-desc' }, item.preview?.description ?? item.description ?? 'Open this item to explore more.'),
+          props.anatomy?.preview?.showDescription !== false && h('p', { class: 'naviox-preview-desc' }, item.preview?.description ?? item.description ?? 'Open this item to explore more.'),
         ]),
-        ...(item.preview?.meta ?? []).map((entry) => h('div', { class: 'naviox-meta', key: entry.label }, [h('span', entry.label), h('span', entry.value)])),
-        h('div', { class: 'naviox-preview-actions' }, [
+        ...(props.anatomy?.preview?.showMetadata === false ? [] : (item.preview?.meta ?? [])).map((entry) => h('div', { class: 'naviox-meta', key: entry.label }, [h('span', entry.label), h('span', entry.value)])),
+        props.anatomy?.preview?.showActions !== false && h('div', { class: 'naviox-preview-actions' }, [
           h('button', { type: 'button', class: 'naviox-mini-action', 'aria-label': isFavorite(item) ? `Remove ${item.title} from favorites` : `Add ${item.title} to favorites`, onClick: () => controller.toggleFavorite(item.id) }, [icon('star', 14), isFavorite(item) ? 'Saved' : 'Save']),
           h('button', { type: 'button', class: 'naviox-mini-action', 'aria-label': isPinned(item) ? `Unpin ${item.title}` : `Pin ${item.title}`, onClick: () => controller.togglePinned(item.id) }, [icon('pin', 14), isPinned(item) ? 'Pinned' : 'Pin']),
         ]),
       ] : [h('div', { class: 'naviox-preview-idle' }, [icon('sparkle', 27), h('p', 'Select an item to see its details')])]);
+    }
+
+    function renderSearch(snapshot: NavioxState, activeId: string | undefined): VNode {
+      // The internal input is passed into the search slot, so custom search
+      // chrome can retain native keyboard, combobox ARIA and focus behavior.
+      const searchInput = h('input', {
+        id: `${id}-search`, ref: input, type: 'search', role: 'combobox',
+        class: 'naviox-search-input', autocomplete: 'off', autocapitalize: 'off', spellcheck: false,
+        'aria-label': props.label, 'aria-controls': listId, 'aria-expanded': 'true',
+        'aria-haspopup': 'listbox', 'aria-autocomplete': 'list',
+        'aria-activedescendant': activeId, placeholder: props.placeholder,
+        value: snapshot.query,
+        onInput: (event: Event) => controller.setQuery((event.target as HTMLInputElement).value),
+        onKeydown: onInputKey,
+      });
+      const children = slots.search?.({ state: snapshot, controller, input: searchInput, focusSearch }) ?? [
+        props.showSearchIcon && props.anatomy?.search?.iconPosition !== 'none' && h('span', { class: 'naviox-search-icon' }, slots.searchIcon?.({ state: snapshot }) ?? [icon('search', 20)]),
+        searchInput,
+        props.anatomy?.search?.clearable !== false && snapshot.query && h('button', { type: 'button', class: 'naviox-clear', 'aria-label': 'Clear search', onClick: () => { controller.setQuery(''); focusSearch(); } }, [icon('close', 14)]),
+        props.showDismiss && h('button', { type: 'button', class: 'naviox-dismiss', 'aria-label': 'Close command palette', onClick: close }, [h('kbd', 'ESC')]),
+      ];
+      return h('header', { class: ['naviox-searchbar', props.anatomy?.search?.iconPosition === 'end' && 'naviox-search-icon-end'], 'data-naviox-part': 'search', 'data-naviox-search': '' }, [
+        h('label', { id: labelId, for: `${id}-search`, class: 'naviox-sr-only' }, props.label),
+        ...children,
+      ]);
     }
 
     function renderDialog(): VNode {
@@ -330,8 +415,10 @@ export const NavioxPalette = defineComponent({
       const hasMore = Object.entries(snapshot.providers).filter(([, info]) => info.hasMore);
       const groups = snapshot.sections;
       const activeId = selected ? optionId(selected) : undefined;
+      const search = renderSearch(snapshot, activeId);
+      const customSearch = props.searchPosition === 'custom' && (!!slots.content || !!slots.header);
       const defaultContent = h('div', { class: 'naviox-layout' }, [
-        h('div', { class: 'naviox-results-pane' }, [
+        h('div', { class: 'naviox-results-pane', 'data-naviox-part': 'results' }, [
           snapshot.breadcrumbs.length > 0 && h('nav', { class: 'naviox-breadcrumbs', 'aria-label': 'Command path' }, [
             h('button', { type: 'button', class: 'naviox-crumb', onClick: () => controller.setPage(null) }, 'Home'),
             ...snapshot.breadcrumbs.flatMap((crumb, i) => [
@@ -372,7 +459,7 @@ export const NavioxPalette = defineComponent({
       return h('dialog', {
         dir: props.dir, ref: dialog,
         class: ['naviox-dialog', ...themeClasses.value, `naviox-size-${props.size}`, !props.preview && 'naviox-no-preview'],
-        style: resolvedTheme.value.style,
+        style: dialogStyle.value,
         'data-naviox-theme': resolvedTheme.value.name,
         'data-naviox-variant': props.variant,
         'aria-labelledby': labelId,
@@ -387,31 +474,17 @@ export const NavioxPalette = defineComponent({
         },
         onClick: onDialogClick,
       }, [h('div', { class: 'naviox-shell' }, [
-        h('header', { class: 'naviox-searchbar' }, [
-          h('span', { class: 'naviox-search-icon' }, [icon('search', 20)]),
-          h('label', { id: labelId, for: `${id}-search`, class: 'naviox-sr-only' }, props.label),
-          h('input', {
-            id: `${id}-search`, ref: input, type: 'search', role: 'combobox',
-            class: 'naviox-search-input', autocomplete: 'off', autocapitalize: 'off', spellcheck: false,
-            'aria-label': props.label, 'aria-controls': listId, 'aria-expanded': 'true',
-            'aria-haspopup': 'listbox', 'aria-autocomplete': 'list',
-            'aria-activedescendant': activeId, placeholder: props.placeholder,
-            value: snapshot.query,
-            onInput: (event: Event) => controller.setQuery((event.target as HTMLInputElement).value),
-            onKeydown: onInputKey,
-          }),
-          snapshot.query && h('button', { type: 'button', class: 'naviox-clear', 'aria-label': 'Clear search', onClick: () => { controller.setQuery(''); focusSearch(); } }, [icon('close', 14)]),
-          h('button', { type: 'button', class: 'naviox-dismiss', 'aria-label': 'Close command palette', onClick: close }, [h('kbd', 'ESC')]),
-        ]),
+        ((props.searchPosition === 'top' || (props.searchPosition === 'custom' && !customSearch)) && search),
         h('div', { id: hintId, class: 'naviox-sr-only' }, 'Use up and down arrows to navigate; Enter to open; Escape to go back or close.'),
-        slots.header?.({ state: snapshot, controller }),
-        slots.content?.({ state: snapshot, controller, activate }) ?? defaultContent,
+        slots.header?.({ state: snapshot, controller, search }),
+        slots.content?.({ state: snapshot, controller, activate, search }) ?? defaultContent,
         snapshot.execution.status === 'running' && h('div', { class: 'naviox-progress', role: 'status' }, [
           h('span', snapshot.execution.progress?.message ?? 'Working…'),
           h('button', { type: 'button', onClick: () => controller.cancelExecution() }, 'Cancel'),
         ]),
         snapshot.execution.status === 'error' && h('div', { class: 'naviox-error', role: 'alert' }, 'This command failed. You can retry.'),
-        slots.footer?.({ state: snapshot, controller }) ?? defaultFooter,
+        (props.searchPosition === 'bottom' && search),
+        slots.footer?.({ state: snapshot, controller, search }) ?? defaultFooter,
       ])]);
     }
 
