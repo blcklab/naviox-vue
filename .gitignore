@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+*.tgz
+.env*
+.DS_Store
+.internal/
+
+.demo-dist/
+
+# Browser verification artifacts
+playwright-report/
+test-results/
+
+*.log

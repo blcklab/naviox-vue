@@ -1,0 +1,22 @@
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#100f18;min-height:100vh;color:#f6eef2}
+.showcase{min-height:100dvh;position:relative;overflow:hidden;padding:28px clamp(24px,5vw,94px);background:radial-gradient(circle at 76% 34%,rgba(127,74,142,.27),transparent 32%),linear-gradient(127deg,#11121d,#251927 60%,#171320);}
+.showcase-sakura{background:linear-gradient(125deg,#fff3eb,#f8e6e9);color:#402a3d}.showcase-ink{background:#f9f8f6;color:#28242d}
+.showcase::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 78px,rgba(222,167,215,.035) 78px 79px);pointer-events:none}
+.showcase-planet{position:absolute;right:13%;top:19%;height:min(45vw,530px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c5a0b6,#4f3558 50%,#231d30 85%);box-shadow:0 0 110px rgba(178,92,156,.15);opacity:.78}
+.showcase-header{display:flex;justify-content:space-between;align-items:center;gap:14px;font:10px ui-monospace,monospace;letter-spacing:.13em;position:relative;z-index:1}
+.showcase-header strong{font-size:13px;font-weight:600}
+.showcase-main{position:relative;z-index:1;margin-top:clamp(120px,18vh,210px);max-width:740px}
+.showcase-kicker{font:11px ui-monospace,monospace;letter-spacing:.18em;color:#ce9cbd}
+.showcase-main h1{margin:27px 0 22px;font:normal clamp(56px,7.3vw,112px)/.97 Georgia,serif;letter-spacing:-.067em}
+.showcase-main h1 i{display:block;font-style:italic;color:#deadd1}
+.showcase-main p{max-width:425px;font-size:15px;line-height:1.9;color:#aa9cad}
+.showcase-ctrls{display:flex;align-items:center;gap:18px;margin-top:35px;font-size:12px;color:#9f8da5}
+.showcase-ctrls button{border:1px solid #a77e9c;border-radius:30px;background:#f5e5ee;color:#2d1d2d;padding:13px 20px;cursor:pointer;font-size:12px}
+@media(max-width:640px){.showcase-header span:nth-child(2){display:none}.showcase-planet{right:-28%;top:20%;height:90vw}.showcase-main{margin-top:110px}}
+
+/* M4.1 custom themes / variant demo controls */
+.showcase-selectors {display:flex;gap:15px;flex-wrap:wrap;align-items:center;margin-bottom:15px;}
+.showcase-selectors label {display:flex;align-items:center;gap:8px;font:11px/1.5 ui-monospace,monospace;letter-spacing:.06em;}
+.showcase-selectors select {color:inherit;background:transparent;border:1px solid currentColor;border-radius:9px;padding:9px 12px;opacity:.86;cursor:pointer;}
+.showcase-selectors select option {color:#1c2025;background:#f7f8f8;}
