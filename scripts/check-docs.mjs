@@ -31,6 +31,11 @@ if (pkg.name !== '@blcklab/naviox') {
   if (!pkg.exports?.['./styles.css']) errors.push('Missing documented CSS subpath export');
   if (!pkg.peerDependencies) errors.push('Framework must remain a peer dependency');
   if (!pkg.dependencies?.['@blcklab/naviox']) errors.push('Adapter must depend on public core package');
+  for (const path of ['README.md', 'docs/getting-started.md']) {
+    const install = files.get(path);
+    if (!install.includes('npm install @blcklab/naviox-vue@next')) errors.push(`${path}: installation should require only the adapter`);
+    if (/npm install[^\n]*@blcklab\/naviox@/.test(install)) errors.push(`${path}: core should be installed transitively`);
+  }
 }
 if ('workspaces' in pkg) errors.push('This must remain an independent repository');
 if (pkg.name === '@blcklab/naviox' && 'dependencies' in pkg && Object.keys(pkg.dependencies ?? {}).length) errors.push('Core must not gain runtime dependencies');

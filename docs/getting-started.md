@@ -5,10 +5,10 @@ Naviox separates navigation behavior from the UI. This adapter provides the comp
 ## 1. Install
 
 ```bash
-npm install @blcklab/naviox-vue@next @blcklab/naviox@0.1.0-alpha.7 vue
+npm install @blcklab/naviox-vue@next
 ```
 
-The `@next` tag becomes available after the adapter is published. You can also develop from this repository by running `npm install`.
+The adapter automatically installs its required `@blcklab/naviox` core dependency. If you're adding it to an existing Vue 3 project, there is no need to install the core or framework again. For stable versions (once released), install without `@next`: `npm install @blcklab/naviox-vue`. The `@next` tag becomes available after the adapter is published; for local development of this repository, run `npm install`.
 
 ## 2. Import the stylesheet and render a component
 

@@ -9,10 +9,10 @@ Version: `@blcklab/naviox-vue@0.1.0-alpha.14` (prerelease).
 ## Install
 
 ```bash
-npm install @blcklab/naviox-vue@next @blcklab/naviox@0.1.0-alpha.7 vue
+npm install @blcklab/naviox-vue@next
 ```
 
-Until this adapter's `next` release has been published, use its source repository instead. The core is published separately and the framework remains a peer dependency.
+For prereleases, use `@next`; after a stable release, use `npm install @blcklab/naviox-vue`. The adapter installs the compatible `@blcklab/naviox` core automatically. Your existing Vue 3 application supplies the framework peer dependency. No second Naviox installation is needed. If the adapter has not yet been published, develop from its source repository instead.
 
 ## Try it
 

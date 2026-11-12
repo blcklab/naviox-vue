@@ -11,4 +11,4 @@ Naviox adds search, command workflows and rich navigation to Vue 3 projects. Sta
 - [Compatibility](compatibility.md) — supported versions and SSR notes
 - [Publishing](publishing.md) — contributing and release steps
 
-The underlying engine is [`@blcklab/naviox`](https://www.npmjs.com/package/@blcklab/naviox). No other framework package is required.
+The adapter installs [`@blcklab/naviox`](https://www.npmjs.com/package/@blcklab/naviox) automatically. Install the framework adapter only; you do not need a separate core install in your application.

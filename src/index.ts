@@ -2,7 +2,7 @@ export { NavioxPalette } from './components/NavioxPalette.js';
 export { useNaviox } from './composables/useNaviox.js';
 export type { NavioxPaletteProps, NavioxPaletteTheme, NavioxPaletteExpose } from './components/NavioxPalette.js';
 export type { UseNavioxOptions, UseNavioxReturn } from './composables/useNaviox.js';
-// Core is a direct application dependency; these are convenient public type re-exports.
+// Core is a direct adapter dependency, automatically installed with Naviox Vue. These are convenient public type re-exports.
 export type { NavioxController, NavioxItem, NavioxGroup, NavioxOptions, NavioxState, NavioxProvider } from '@blcklab/naviox';
 
 export { defineNavioxTheme, resolveNavioxTheme, navioxHexRgb, navioxThemeClass, defaultSystemThemes } from './theme.js';
