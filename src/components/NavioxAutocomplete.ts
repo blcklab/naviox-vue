@@ -1,6 +1,10 @@
 import type { NavioxController, NavioxExecutionResult, NavioxItem, NavioxOptions } from '@blcklab/naviox';
 import { computed, defineComponent, h, onMounted, onBeforeUnmount, ref, useId, watch } from 'vue';
 import type { PropType, VNodeChild } from 'vue';
+import type { NavioxItemVisual } from '../anatomy.js';
+import type { NavioxAutocompleteAnatomy } from '../navigation-anatomy.js';
+import { resolveAutocompleteAnatomyStyle } from '../navigation-anatomy.js';
+import { navioxNavigationItemIcon } from '../internal/navigation-visual.js';
 import { useNaviox } from '../composables/useNaviox.js';
 import { safeNavigationHref } from '../internal/urls.js';
 import { nextVisibleOptionId } from '../internal/keyboard.js';
@@ -24,6 +28,8 @@ export const NavioxAutocomplete = defineComponent({
     themes: { type: Object as PropType<Readonly<Record<string, NavioxThemeDefinition>>>, default: undefined },
     systemThemes: { type: Object as PropType<NavioxSystemThemes>, default: () => defaultSystemThemes },
     appearance: { type: Object as PropType<NavioxAppearance>, default: undefined },
+    anatomy: { type: Object as PropType<NavioxAutocompleteAnatomy>, default: undefined },
+    visuals: { type: Object as PropType<Readonly<Record<string, NavioxItemVisual>>>, default: undefined },
     navigate: { type: Function as PropType<(item: NavioxItem) => unknown>, default: undefined },
   },
   emits: {
@@ -105,30 +111,41 @@ export const NavioxAutocomplete = defineComponent({
     });
     onBeforeUnmount(() => { document.removeEventListener('pointerdown', onOutside); media?.removeEventListener?.('change', onScheme); });
     return () => h('div', {
-      ref: root, dir: props.dir, class: ['naviox-mount', 'naviox-auto', navioxThemeClass(theme.value.name)], style: theme.value.style,
+      ref: root, dir: props.dir, class: ['naviox-mount', 'naviox-auto', navioxThemeClass(theme.value.name)],
+      style: { ...theme.value.style, ...resolveAutocompleteAnatomyStyle(props.anatomy) },
+      'data-naviox-panel-placement': props.anatomy?.panel?.placement ?? 'below',
+      'data-naviox-panel-align': props.anatomy?.panel?.align ?? 'start',
+      'data-naviox-field-surface': props.anatomy?.field?.surface ?? 'filled',
+      'data-naviox-field-icon-position': props.anatomy?.field?.iconPosition ?? 'start',
       onFocusout: (event: FocusEvent) => { if (event.relatedTarget && !root.value?.contains(event.relatedTarget as Node)) close(); },
     }, [
-      h('div', { class: 'naviox-auto-field' }, [
-        slots.prefix?.() as VNodeChild ?? h('span', { 'aria-hidden': 'true', class: 'naviox-auto-search-icon' }, '⌕'),
+      h('div', { class: 'naviox-auto-field', 'data-naviox-part': 'search' }, [
+        props.anatomy?.field?.iconPosition !== 'none' && (slots.prefix?.() as VNodeChild ?? h('span', { 'aria-hidden': 'true', class: 'naviox-auto-search-icon' }, '⌕')),
         h('input', { ref: input, type: 'search', autocomplete: 'off', class: 'naviox-auto-input', role: 'combobox',
           'aria-label': props.label, 'aria-autocomplete': 'list', 'aria-haspopup': 'listbox', 'aria-controls': visible.value ? listId : undefined,
           'aria-expanded': String(visible.value), 'aria-activedescendant': visible.value && selected.value ? itemDomId(selected.value) : undefined,
           placeholder: props.placeholder, value: state.value.query, onFocus: open, onInput, onKeydown: onKey,
         }),
-        state.value.query && h('button', { type: 'button', class: 'naviox-auto-clear', 'aria-label': 'Clear search', onClick: () => { controller.setQuery(''); emit('update:modelValue', ''); focus(); } }, '×'),
+        props.anatomy?.field?.clearable !== false && state.value.query && h('button', { type: 'button', class: 'naviox-auto-clear', 'aria-label': 'Clear search', onClick: () => { controller.setQuery(''); emit('update:modelValue', ''); focus(); } }, '×'),
       ]),
-      visible.value && h('div', { class: 'naviox-auto-panel' }, [
+      visible.value && h('div', { class: 'naviox-auto-panel', 'data-naviox-part': 'panel',
+        'data-naviox-footer-divider': String(props.anatomy?.panel?.footerDivider !== false) }, [
         h('div', { id: listId, role: 'listbox', class: 'naviox-auto-list', 'aria-label': `${props.label} suggestions`, 'aria-busy': state.value.providersLoading ? 'true' : 'false' }, results.value.map((item) =>
-          h('div', { id: itemDomId(item), key: item.id, role: 'option', 'aria-selected': item.id === state.value.activeId ? 'true' : 'false', 'aria-disabled': item.disabled || item.readOnly ? 'true' : undefined, class: ['naviox-auto-option', item.id === state.value.activeId && 'is-active', (item.disabled || item.readOnly) && 'is-disabled'],
+          h('div', { id: itemDomId(item), key: item.id, role: 'option', 'aria-selected': item.id === state.value.activeId ? 'true' : 'false', 'aria-disabled': item.disabled || item.readOnly ? 'true' : undefined, 'data-naviox-part': 'item', class: ['naviox-auto-option', item.id === state.value.activeId && 'is-active', (item.disabled || item.readOnly) && 'is-disabled'],
             onPointerenter: (event: PointerEvent) => { if (event.pointerType !== 'touch' && !item.disabled && !item.readOnly) controller.setActive(item.id); }, onMousedown: (event: MouseEvent) => event.preventDefault(), onClick: () => activate(item),
           }, slots.item?.({ item, active: item.id === state.value.activeId, activate: () => activate(item) }) as VNodeChild ?? [
-            h('span', { class: 'naviox-auto-monogram', 'aria-hidden': 'true' }, item.title.slice(0, 1)),
-            h('span', { class: 'naviox-auto-copy' }, [h('strong', item.title), item.description && h('small', item.description)]),
-            h('span', { 'aria-hidden': 'true', class: 'naviox-auto-arrow' }, '↗'),
+            navioxNavigationItemIcon(item, props.visuals?.[item.id], props.anatomy?.row,
+              slots.itemIcon?.({ item, active: item.id === state.value.activeId }) as VNodeChild | undefined),
+            h('span', { class: 'naviox-auto-copy', 'data-naviox-part': 'item-copy' }, [
+              h('strong', item.title), props.anatomy?.row?.showDescription !== false && item.description && h('small', item.description),
+            ]),
+            props.anatomy?.row?.showBadge !== false && props.visuals?.[item.id]?.badge && h('span', { class: 'naviox-nav-badge' }, props.visuals[item.id]!.badge),
+            props.anatomy?.row?.showShortcut !== false && item.shortcuts?.[0] && h('kbd', { class: 'naviox-nav-shortcut' }, item.shortcuts[0]),
+            props.anatomy?.row?.showTail !== false && h('span', { 'aria-hidden': 'true', class: 'naviox-auto-arrow' }, '↗'),
           ]))),
         state.value.providersLoading && h('div', { role: 'status', class: 'naviox-auto-status' }, 'Searching…'),
         !results.value.length && !state.value.providersLoading && h('div', { role: 'status', class: 'naviox-auto-empty' }, slots.empty?.({ query: state.value.query }) ?? (enough.value ? 'No matching results' : `Type at least ${props.minChars} characters`)),
-        slots.footer?.({ controller, state: state.value }) as VNodeChild ?? h('div', { class: 'naviox-auto-footer' }, [h('span', `${results.value.length} suggestions`), h('span', '↑↓ · Enter · Esc')]),
+        slots.footer?.({ controller, state: state.value }) as VNodeChild ?? h('div', { class: 'naviox-auto-footer', 'data-naviox-part': 'footer' }, [h('span', `${results.value.length} suggestions`), h('span', '↑↓ · Enter · Esc')]),
       ]),
     ]);
   },

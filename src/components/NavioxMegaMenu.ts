@@ -2,6 +2,10 @@ import { rankItems, sectionItems } from '@blcklab/naviox';
 import type { NavioxController, NavioxExecutionResult, NavioxGroup, NavioxItem } from '@blcklab/naviox';
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import type { PropType, VNodeChild } from 'vue';
+import type { NavioxItemVisual } from '../anatomy.js';
+import type { NavioxMegaMenuAnatomy } from '../navigation-anatomy.js';
+import { resolveMegaMenuAnatomyStyle } from '../navigation-anatomy.js';
+import { navioxNavigationItemIcon } from '../internal/navigation-visual.js';
 import { safeNavigationHref } from '../internal/urls.js';
 import { mergeNavioxMenuItems } from '../internal/menu-items.js';
 import { defaultSystemThemes, navioxThemeClass, resolveNavioxTheme } from '../theme.js';
@@ -28,6 +32,9 @@ export const NavioxMegaMenu = defineComponent({
     themes: { type: Object as PropType<Readonly<Record<string, NavioxThemeDefinition>>>, default: undefined },
     systemThemes: { type: Object as PropType<NavioxSystemThemes>, default: () => defaultSystemThemes },
     appearance: { type: Object as PropType<NavioxAppearance>, default: undefined },
+    /** Default rendering controls. Existing slots continue to override these defaults. */
+    anatomy: { type: Object as PropType<NavioxMegaMenuAnatomy>, default: undefined },
+    visuals: { type: Object as PropType<Readonly<Record<string, NavioxItemVisual>>>, default: undefined },
     navigate: { type: Function as PropType<(item: NavioxItem) => unknown>, default: undefined },
   },
   emits: {
@@ -153,35 +160,50 @@ export const NavioxMegaMenu = defineComponent({
       dir: props.dir,
       ref: root,
       class: ['naviox-mount', 'naviox-mega', navioxThemeClass(theme.value.name), `naviox-density-${props.appearance?.density ?? 'comfortable'}`, props.appearance?.motion === 'reduced' && 'naviox-motion-reduced'],
-      style: theme.value.style,
+      style: { ...theme.value.style, ...resolveMegaMenuAnatomyStyle(props.anatomy) },
       onKeydown: onKey, onPointerenter: onPointerEnter, onPointerleave: onPointerLeave,
       onFocusout: (event: FocusEvent) => { if (event.relatedTarget && !root.value?.contains(event.relatedTarget as Node)) close(); },
     }, [
       h('button', { ref: trigger, type: 'button', class: 'naviox-mega-trigger', 'aria-expanded': String(expanded.value), 'aria-controls': panelId, onClick: toggle }, slots.trigger?.({ open, close, toggle, expanded: expanded.value }) ?? [props.triggerLabel, h('span', { class: 'naviox-mega-caret', 'aria-hidden': 'true' }, expanded.value ? '⌃' : '⌄')]),
-      expanded.value && h('div', { ref: panel, id: panelId, class: ['naviox-mega-panel', panelFlipped.value && 'is-flipped', !props.preview && 'naviox-mega-no-preview'], style: { right: `${-panelShift.value}px`, maxHeight: panelMaxHeight.value } }, [
+      expanded.value && h('div', { ref: panel, id: panelId, 'data-naviox-part': 'panel',
+        'data-naviox-preview-placement': props.anatomy?.panel?.previewPlacement ?? 'right',
+        'data-naviox-accent-line': String(props.anatomy?.panel?.accentLine !== false),
+        'data-naviox-footer-divider': String(props.anatomy?.panel?.footerDivider !== false),
+        class: ['naviox-mega-panel', panelFlipped.value && 'is-flipped', !props.preview && 'naviox-mega-no-preview'],
+        style: { right: `${-panelShift.value}px`, maxHeight: panelMaxHeight.value ? `min(${panelMaxHeight.value}, var(--nx-mega-max-height, 580px))` : undefined } }, [
         h('nav', { class: 'naviox-mega-results', 'aria-label': props.label }, sections.value.map((section) => h('section', { key: section.id, class: 'naviox-mega-section' }, [
           section.title && h('h3', { class: 'naviox-mega-section-label' }, section.title),
           ...section.items.map((item) => {
             const selected = item.id === active.value?.id;
-            const attrs = { id: safeId(item.id), class: ['naviox-mega-link', selected && 'is-active'], 'aria-disabled': item.disabled || item.readOnly ? 'true' : undefined, tabindex: item.disabled ? -1 : 0, onFocus: () => { activeId.value = item.id; }, onPointerenter: (event: PointerEvent) => { if (event.pointerType !== 'touch' && !item.disabled) activeId.value = item.id; }, onClick: (event: MouseEvent) => activate(item, event) };
+            const attrs = { id: safeId(item.id), class: ['naviox-mega-link', selected && 'is-active'],
+              'data-naviox-part': 'item', 'aria-disabled': item.disabled || item.readOnly ? 'true' : undefined,
+              tabindex: item.disabled || item.readOnly ? -1 : 0,
+              onFocus: () => { if (!item.disabled && !item.readOnly) activeId.value = item.id; },
+              onPointerenter: (event: PointerEvent) => { if (event.pointerType !== 'touch' && !item.disabled && !item.readOnly) activeId.value = item.id; }, onClick: (event: MouseEvent) => activate(item, event) };
             const href = safeNavigationHref(item.href);
             return h(href && item.kind !== 'command' && !item.perform && !item.disabled && !item.readOnly ? 'a' : 'button', {
               ...attrs, key: item.id, ...(href && item.kind !== 'command' && !item.perform && !item.disabled && !item.readOnly ? { href } : { type: 'button' }),
             }, slots.item?.({ item, active: selected, activate: (event?: MouseEvent) => activate(item, event) }) as VNodeChild ?? [
-              h('span', { class: 'naviox-mega-monogram', 'aria-hidden': 'true' }, item.title.slice(0, 1)),
-              h('span', { class: 'naviox-mega-copy' }, [h('strong', item.title), item.description && h('small', item.description)]),
-              h('span', { class: 'naviox-mega-link-arrow', 'aria-hidden': 'true' }, '↗'),
+              navioxNavigationItemIcon(item, props.visuals?.[item.id], props.anatomy?.row,
+                slots.itemIcon?.({ item, active: selected }) as VNodeChild | undefined),
+              h('span', { class: 'naviox-mega-copy', 'data-naviox-part': 'item-copy' }, [
+                h('strong', item.title),
+                props.anatomy?.row?.showDescription !== false && item.description && h('small', item.description),
+              ]),
+              props.anatomy?.row?.showBadge !== false && props.visuals?.[item.id]?.badge && h('span', { class: 'naviox-nav-badge' }, props.visuals[item.id]!.badge),
+              props.anatomy?.row?.showShortcut !== false && item.shortcuts?.[0] && h('kbd', { class: 'naviox-nav-shortcut' }, item.shortcuts[0]),
+              props.anatomy?.row?.showTail !== false && h('span', { class: 'naviox-mega-link-arrow', 'aria-hidden': 'true' }, '↗'),
             ]);
           }),
         ]))),
-        props.preview && h('aside', { class: 'naviox-mega-preview', 'aria-label': 'Navigation preview' }, slots.preview?.({ item: active.value }) as VNodeChild ?? (active.value ? [
-          h('div', { class: ['naviox-mega-art', !active.value.preview?.image && 'is-generated'] }, active.value.preview?.image ? [h('img', { src: active.value.preview.image, alt: active.value.preview.imageAlt ?? '', loading: 'lazy' })] : [h('span', { 'aria-hidden': 'true' }, active.value.title.slice(0, 1))]),
+        props.preview && h('aside', { class: 'naviox-mega-preview', 'data-naviox-part': 'preview', 'aria-label': 'Navigation preview' }, slots.preview?.({ item: active.value }) as VNodeChild ?? (active.value ? [
+          props.anatomy?.preview?.showArtwork !== false && h('div', { class: ['naviox-mega-art', !active.value.preview?.image && 'is-generated'], 'data-naviox-part': 'preview-art' }, active.value.preview?.image ? [h('img', { src: active.value.preview.image, alt: active.value.preview.imageAlt ?? '', loading: 'lazy' })] : [h('span', { 'aria-hidden': 'true' }, active.value.title.slice(0, 1))]),
           h('span', { class: 'naviox-mega-eyebrow' }, active.value.group ?? active.value.kind ?? 'Explore'),
           h('h3', { class: 'naviox-mega-title' }, active.value.title),
-          h('p', { class: 'naviox-mega-description' }, active.value.preview?.description ?? active.value.description ?? ''),
-          ...(active.value.preview?.meta ?? []).map((entry) => h('div', { class: 'naviox-mega-meta', key: entry.label }, [h('span', entry.label), h('span', entry.value)])),
+          props.anatomy?.preview?.showDescription !== false && h('p', { class: 'naviox-mega-description' }, active.value.preview?.description ?? active.value.description ?? ''),
+          ...(props.anatomy?.preview?.showMetadata === false ? [] : (active.value.preview?.meta ?? [])).map((entry) => h('div', { class: 'naviox-mega-meta', key: entry.label }, [h('span', entry.label), h('span', entry.value)])),
         ] : h('p', 'Explore the collection'))),
-        slots.footer?.() as VNodeChild ?? h('footer', { class: 'naviox-mega-footer' }, [h('span', `${ordered.value.length} destinations`), h('span', '↑ ↓ Navigate  ·  Esc Close')]),
+        slots.footer?.() as VNodeChild ?? h('footer', { class: 'naviox-mega-footer', 'data-naviox-part': 'footer' }, [h('span', `${ordered.value.length} destinations`), h('span', '↑ ↓ Navigate  ·  Esc Close')]),
       ]),
     ]);
   },

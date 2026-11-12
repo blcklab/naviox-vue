@@ -21,3 +21,8 @@ export type { NavioxFlavorDefinition } from './flavor.js';
 
 export { defineNavioxAnatomy, resolveNavioxAnatomyStyle } from './anatomy.js';
 export type { NavioxPaletteAnatomy, NavioxItemVisual, NavioxResultIconMode, NavioxIconShape, NavioxPaletteIconName } from './anatomy.js';
+
+// Advanced navigation anatomy — usable without internal CSS class knowledge.
+export { defineNavioxMegaMenuAnatomy, defineNavioxAutocompleteAnatomy,
+  resolveMegaMenuAnatomyStyle, resolveAutocompleteAnatomyStyle } from './navigation-anatomy.js';
+export type { NavioxMegaMenuAnatomy, NavioxAutocompleteAnatomy } from './navigation-anatomy.js';
