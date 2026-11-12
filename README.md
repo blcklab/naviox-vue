@@ -4,7 +4,7 @@ Beautiful, accessible-minded command and navigation components for **Vue 3**. Po
 
 Includes a keyboard-first **command palette**, a **preview-rich mega-menu**, and an **autocomplete**. Keep the minimalist Ink theme, use soft Sakura or cinematic Nocturne, or bring your own colors and content.
 
-Version: `@blcklab/naviox-vue@0.1.0-alpha.16` (prerelease).
+Version: `@blcklab/naviox-vue@0.1.0-alpha.17` (prerelease).
 
 ## Install
 

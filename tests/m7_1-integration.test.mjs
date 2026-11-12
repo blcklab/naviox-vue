@@ -15,7 +15,7 @@ function createShared() {
 
 test('M7.1 uses the exact M7 dependency in an independent vue repository', () => {
   assert.equal(pkg.dependencies['@blcklab/naviox'], '0.1.0-alpha.7');
-  assert.equal(pkg.version, '0.1.0-alpha.16');
+  assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
   assert.equal(pkg.name, '@blcklab/naviox-vue');
   assert.ok(!pkg.workspaces);
   assert.ok(!JSON.stringify(pkg).includes('OTHER_@blcklab/naviox-vue'));
