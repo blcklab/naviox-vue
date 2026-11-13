@@ -1,10 +1,26 @@
+## 0.1.0-alpha.19 (candidate)
+
+- Add opt-in Precision presentation and typed contextual actions with search, focus return, keyboard navigation and async execution.
+- Preserve all existing variants and keep `@blcklab/naviox` core unchanged.
+- Candidate until full Vue / SSR / browser checks pass.
+
 ## 0.1.0-alpha.18 — M9.2 layout corrections
 
-- Fixed preview-disabled layouts reserving an empty column with alternate preview placement.
+- Fixed preview-disabled layouts reserving an empty column when preview placement is left or bottom.
 - Fixed the ordering of custom footer slots when search is positioned at the bottom.
-- Preserved contrast of plain icons when tile visuals include a white foreground.
-- Improved bottom-preview height for stacked/Aurora-style layouts.
-- Includes the MegaMenu/Autocomplete anatomy work of alpha.17, with no new core dependency.
+- Kept minimal/plain result icons readable when a visual originally supplied white tile text.
+- Bounded bottom preview sizing for more usable Aurora-style stacked compositions.
+- Included M9.1 MegaMenu/Autocomplete anatomy and public visual customization from alpha.17.
+- No breaking public API changes, no core update, and no new framework dependencies.
+
+## 0.1.0-alpha.17 (M9.1 source candidate)
+
+- Added typed `NavioxMegaMenuAnatomy` and `NavioxAutocompleteAnatomy` public options.
+- Added per-item `visuals` to MegaMenu and Autocomplete: image thumbnails, colored icon tiles, monograms, badges and shortcut labels.
+- Added component-owned styling tokens for menu geometry, preview placement, contextual input and popup appearance.
+- Exposed stable `data-naviox-part` hooks for result, icon, search, panel, preview and footer.
+- Preserved all existing item, preview, trigger and footer slots; customization is opt-in.
+- Kept `@blcklab/naviox` as a regular dependency and Vue as a peer dependency.
 
 ## 0.1.0-alpha.16 — Palette anatomy and native result visuals
 

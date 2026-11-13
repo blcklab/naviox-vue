@@ -468,3 +468,93 @@
 /* Keep the original compact single-column menu if previews are disabled. */
 .naviox-mega-panel.naviox-mega-no-preview {width:min(var(--nx-mega-width,400px),calc(100vw - 28px));}
 .naviox-auto-panel {width:min(var(--nx-auto-panel-width,100%),calc(100vw - 24px));}
+
+/* M9.5: Optional premium launcher layout. No changes to other variants. */
+.naviox-dialog .naviox-actions-underlay { display:flex; flex-direction:column; flex:1 1 auto; min-height:0; min-width:0; }
+.naviox-dialog .naviox-actions-underlay > .naviox-layout { flex:1 1 auto; min-height:0; }
+.naviox-dialog .naviox-actions-footer-wrap { flex:0 0 auto; min-width:0; }
+.naviox-dialog.naviox-search-bottom .naviox-actions-footer-wrap { order:5; }
+.naviox-dialog .naviox-action-inert-search { display:flex; flex:0 0 auto; }
+.naviox-dialog .naviox-action-inert-search > .naviox-searchbar { width:100%; }
+.naviox-dialog.naviox-search-bottom .naviox-action-inert-search { order:4; }
+.naviox-dialog .naviox-actions-trigger { display:inline-flex;align-items:center;gap:7px;padding:3px 8px;background:var(--nx-elevated);border:1px solid var(--nx-border);border-radius:7px;color:var(--nx-text);cursor:pointer;font-size:11px; }
+.naviox-dialog .naviox-actions-trigger kbd {border:1px solid var(--nx-border);border-radius:4px;padding:3px 5px;}
+.naviox-dialog .naviox-actions-trigger:hover {background:var(--nx-hover);}
+.naviox-dialog.naviox-variant-precision {width:min(940px,calc(100vw - 28px));height:min(600px,calc(100dvh - 28px));color-scheme:dark;}
+.naviox-dialog.naviox-variant-precision .naviox-shell::before {display:none;}
+.naviox-dialog.naviox-variant-precision .naviox-search-input {font-size:20px;font-weight:400;letter-spacing:-.023em;}
+.naviox-dialog.naviox-variant-precision .naviox-searchbar {gap:14px;}
+.naviox-dialog.naviox-variant-precision .naviox-searchbar:focus-within {box-shadow:inset 0 -1px 0 var(--nx-accent);}
+.naviox-dialog.naviox-variant-precision .naviox-results-pane {padding-top:12px;}
+.naviox-dialog.naviox-variant-precision .naviox-group-controls {margin-bottom:2px;}
+.naviox-dialog.naviox-variant-precision .naviox-section-heading {font-size:12px;letter-spacing:.005em;text-transform:none;color:var(--nx-muted);font-family:var(--nx-font);}
+.naviox-dialog.naviox-variant-precision .naviox-item {margin:1px 8px; border-color:transparent;}
+.naviox-dialog.naviox-variant-precision .naviox-item.is-active {background:var(--nx-selected);}
+.naviox-dialog.naviox-variant-precision .naviox-item-title {font-size:14px;font-weight:550;letter-spacing:-.017em;}
+.naviox-dialog.naviox-variant-precision .naviox-item-desc {font-size:12px;}
+.naviox-dialog.naviox-variant-precision .naviox-item-copy {flex-direction:row;align-items:baseline;gap:14px;}
+.naviox-dialog.naviox-variant-precision .naviox-item-copy > * {min-width:0;}
+.naviox-dialog.naviox-variant-precision .naviox-item-desc {flex:1;}
+.naviox-dialog.naviox-variant-precision .naviox-item-badge {font-size:12px;border:0;background:none;color:var(--nx-muted);}
+.naviox-dialog.naviox-variant-precision .naviox-item-icon[data-naviox-mode="tile"] {border-color:rgba(255,255,255,.12);box-shadow:0 1px 5px rgba(0,0,0,.15);}
+.naviox-dialog.naviox-variant-precision .naviox-footer {min-height:55px;background:var(--nx-elevated);font-family:var(--nx-font);font-size:12px;}
+.naviox-dialog.naviox-variant-precision .naviox-footer-help {font-size:12px;gap:8px;}
+
+/* Only while the action subview is open, quiet the covered content to avoid
+   two competing focus/selection hierarchies. This is opt-in and reversible. */
+.naviox-dialog .naviox-actions-underlay[inert],
+.naviox-dialog .naviox-action-inert-search[inert],
+.naviox-dialog .naviox-actions-footer-wrap[inert] {opacity:.33;pointer-events:none;}
+
+/* Contextual action subview sits inside the same native modal, with its own search.
+   Default geometry follows the reference's side-panel concept but remains themeable. */
+.naviox-dialog .naviox-context-actions {
+  position:absolute; z-index:30; right:14px; bottom:60px;
+  width:min(var(--nx-actions-width,420px),calc(100% - 28px)); max-height:min(var(--nx-actions-max-height,460px),calc(100% - 92px));
+  display:flex;flex-direction:column;min-height:130px;overflow:hidden;
+  border:1px solid var(--nx-border);border-radius:var(--nx-actions-radius,16px);
+  background:var(--nx-elevated);color:var(--nx-text);
+  box-shadow:0 25px 75px rgba(0,0,0,.36),0 1px 4px rgba(0,0,0,.15);
+  animation:naviox-actions-appear .16s ease-out;
+}
+.naviox-dialog.naviox-actions-left .naviox-context-actions {left:14px;right:auto;}
+.naviox-dialog .naviox-actions-heading {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;border-bottom:1px solid var(--nx-border);min-height:48px;}
+.naviox-dialog .naviox-actions-heading > span {display:inline-flex;align-items:center;gap:9px;min-width:0;}
+.naviox-dialog .naviox-actions-heading strong {font-size:13px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.naviox-dialog .naviox-actions-heading small {font-size:11px;color:var(--nx-muted);}
+.naviox-dialog .naviox-actions-dismiss {display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--nx-muted);padding:6px;border-radius:6px;cursor:pointer;}
+.naviox-dialog .naviox-actions-dismiss:hover {background:var(--nx-hover);color:var(--nx-text);}
+.naviox-dialog .naviox-actions-list {flex:1;overflow:auto;min-height:0;padding:10px 9px;scrollbar-width:thin;overscroll-behavior:contain;}
+.naviox-dialog .naviox-actions-group + .naviox-actions-group {margin-top:8px;padding-top:9px;border-top:1px solid var(--nx-border);}
+.naviox-dialog .naviox-actions-group-title {display:block;padding:5px 10px 9px;color:var(--nx-muted);font-size:10px;font-weight:600;letter-spacing:.06em;}
+.naviox-dialog .naviox-action-row {display:flex;align-items:center;gap:10px;min-height:var(--nx-actions-row-height,42px);margin-bottom:2px;padding:8px 10px;border-radius:9px;cursor:pointer;user-select:none;}
+.naviox-dialog .naviox-action-row:hover,.naviox-dialog .naviox-action-row.is-active {background:var(--nx-selected);}
+.naviox-dialog .naviox-action-row.is-disabled {opacity:.4;cursor:not-allowed;}
+.naviox-dialog .naviox-action-row svg {flex-shrink:0;color:var(--nx-accent-text);}
+.naviox-dialog .naviox-action-copy {flex:1;min-width:0;display:flex;align-items:baseline;gap:10px;}
+.naviox-dialog .naviox-action-copy strong {font-size:13px;font-weight:550;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.naviox-dialog .naviox-action-copy small {font-size:11px;color:var(--nx-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.naviox-dialog .naviox-action-shortcut {color:var(--nx-muted);white-space:nowrap;}
+.naviox-dialog .naviox-actions-searchbar {display:flex;align-items:center;gap:9px;min-height:56px;border-top:1px solid var(--nx-border);padding:0 14px;}
+.naviox-dialog .naviox-actions-searchbar svg {color:var(--nx-muted);}
+.naviox-dialog .naviox-actions-search-input {flex:1;min-width:0;background:transparent;border:0;color:var(--nx-text);outline:none;font-size:13px;padding:12px 0;}
+.naviox-dialog .naviox-actions-search-input:focus-visible {outline:none;}
+.naviox-dialog .naviox-actions-searchbar:focus-within {box-shadow:inset 0 1px 0 var(--nx-accent);}
+.naviox-dialog .naviox-actions-searchbar kbd {font-size:10px;border:1px solid var(--nx-border);border-radius:5px;padding:4px 5px;}
+.naviox-dialog .naviox-actions-busy {font-size:11px;color:var(--nx-muted);}
+.naviox-dialog .naviox-actions-empty,.naviox-dialog .naviox-actions-error {font-size:12px;padding:12px 20px;margin:0;color:var(--nx-muted);}
+.naviox-dialog .naviox-actions-error {color:#e18c91;}
+@keyframes naviox-actions-appear {from{opacity:0;transform:translateY(6px) scale(.99);} to{opacity:1;transform:translateY(0) scale(1);}}
+@media(max-width:680px) {
+  .naviox-dialog.naviox-variant-precision {width:calc(100vw - 16px);max-width:none;height:min(88dvh,660px);}
+  .naviox-dialog.naviox-variant-precision .naviox-item-copy {flex-direction:column;gap:2px;}
+  .naviox-dialog .naviox-context-actions,.naviox-dialog.naviox-actions-left .naviox-context-actions {left:8px;right:8px;bottom:48px;width:auto;max-height:calc(100% - 86px);}
+  .naviox-dialog .naviox-actions-underlay[inert],
+  .naviox-dialog .naviox-action-inert-search[inert],
+  .naviox-dialog .naviox-actions-footer-wrap[inert] {opacity:.12;}
+  .naviox-dialog.naviox-variant-precision .naviox-footer-help {font-size:10px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .naviox-dialog .naviox-context-actions {animation:none;}
+}
+.naviox-dialog.naviox-motion-reduced .naviox-context-actions {animation:none;}

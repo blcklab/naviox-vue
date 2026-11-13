@@ -19,6 +19,7 @@ export interface NavioxFlavorDefinition {
   preview?: boolean;
   searchPosition?: NavioxSearchPosition;
   searchDivider?: boolean;
+  showGroupControls?: boolean;
   searchStyle?: NavioxSearchStyle;
   showSearchIcon?: boolean;
   showDismiss?: boolean;

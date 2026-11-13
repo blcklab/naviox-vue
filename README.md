@@ -4,7 +4,7 @@ Beautiful, accessible-minded command and navigation components for **Vue 3**. Po
 
 Includes a keyboard-first **command palette**, a **preview-rich mega-menu**, and an **autocomplete**. Keep the minimalist Ink theme, use soft Sakura or cinematic Nocturne, or bring your own colors and content.
 
-Version: `@blcklab/naviox-vue@0.1.0-alpha.18` (prerelease).
+Version: `@blcklab/naviox-vue@0.1.0-alpha.19` (prerelease).
 
 ## Install
 
@@ -12,7 +12,7 @@ Version: `@blcklab/naviox-vue@0.1.0-alpha.18` (prerelease).
 npm install @blcklab/naviox-vue@next
 ```
 
-For prereleases, use `@next`; after a stable release, use `npm install @blcklab/naviox-vue`. The adapter installs the compatible `@blcklab/naviox` core automatically. Your existing Vue 3 application supplies the framework peer dependency. No second Naviox installation is needed. If the adapter has not yet been published, develop from its source repository instead.
+Until this adapter's `next` release has been published, use its source repository instead. The core is published separately and the framework remains a peer dependency.
 
 ## Try it
 
@@ -75,3 +75,12 @@ You can move the search bar, remove its divider, disable backdrop blur, and repo
 ## Custom result rows and preview anatomy
 
 See [Palette anatomy](docs/palette-anatomy.md) for native colored icon tiles, thumbnails, search placement, row geometry, preview visibility and responsive styling controls.
+
+### Rich navigation customization
+
+MegaMenu and Autocomplete can now use item-specific colored icons and thumbnails, and typed appearance options (`anatomy`). See [Navigation anatomy](docs/navigation-anatomy.md) for the public API and usage examples. Existing slots still take precedence.
+
+
+### Precision launcher (alpha.19 candidate)
+
+See [docs/premium-command.md](docs/premium-command.md) for contextual actions and keyboard usage.

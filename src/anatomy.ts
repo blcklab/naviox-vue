@@ -43,6 +43,14 @@ export interface NavioxPaletteAnatomy {
     showMarkers?: boolean;
     showBadge?: boolean;
   };
+  /** Contextual action subview geometry; supported with or without Precision. */
+  actions?: {
+    width?: string;
+    maxHeight?: string;
+    radius?: string;
+    rowMinHeight?: string;
+    placement?: 'left' | 'right';
+  };
   preview?: {
     showArtwork?: boolean;
     showDescription?: boolean;
@@ -62,6 +70,7 @@ export function defineNavioxAnatomy<T extends NavioxPaletteAnatomy>(definition: 
     ...(definition.search && { search: { ...definition.search } }),
     ...(definition.row && { row: { ...definition.row } }),
     ...(definition.preview && { preview: { ...definition.preview } }),
+    ...(definition.actions && { actions: { ...definition.actions } }),
   } as T;
 }
 
@@ -77,6 +86,10 @@ export function resolveNavioxAnatomyStyle(anatomy?: NavioxPaletteAnatomy): Recor
     [anatomy?.row?.iconSize, '--nx-item-icon-size'],
     [anatomy?.preview?.padding, '--nx-preview-padding'],
     [anatomy?.preview?.imageAspectRatio, '--nx-preview-art-ratio'],
+    [anatomy?.actions?.width, '--nx-actions-width'],
+    [anatomy?.actions?.maxHeight, '--nx-actions-max-height'],
+    [anatomy?.actions?.radius, '--nx-actions-radius'],
+    [anatomy?.actions?.rowMinHeight, '--nx-actions-row-height'],
   ];
   for (const [value, token] of entries) if (value !== undefined && value !== '') style[token] = value;
   if (anatomy?.preview?.imageFit) style['--nx-preview-image-fit'] = anatomy.preview.imageFit;

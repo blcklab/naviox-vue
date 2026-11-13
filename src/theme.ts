@@ -1,7 +1,7 @@
 /** Appearance and theme contracts; no Vue, DOM, or core-engine dependency. */
 export type NavioxBuiltInTheme = 'ink' | 'sakura' | 'nocturne';
 export type NavioxThemeName = NavioxBuiltInTheme | 'system' | (string & {});
-export type NavioxPaletteVariant = 'floating' | 'minimal' | 'compact' | 'spotlight' | 'cinematic';
+export type NavioxPaletteVariant = 'floating' | 'minimal' | 'compact' | 'spotlight' | 'cinematic' | 'precision';
 /** Where the default search bar is rendered in a palette. Custom requires the content renderer to place `search`. */
 export type NavioxSearchPosition = 'top' | 'bottom' | 'custom';
 export type NavioxSearchStyle = 'plain' | 'filled' | 'outlined';

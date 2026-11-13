@@ -14,6 +14,8 @@ import { safeNavigationHref } from '../internal/urls.js';
 import { wrapModalTabFocus } from '../internal/focus.js';
 import { defaultSystemThemes, navioxThemeClass, resolveNavioxTheme } from '../theme.js';
 import { resolveNavioxAnatomyStyle } from '../anatomy.js';
+import { filterNavioxActions, nextNavioxActionId, matchesNavioxActionShortcut } from '../context-actions.js';
+import type { NavioxContextAction, NavioxContextActions } from '../context-actions.js';
 import type { NavioxPaletteAnatomy, NavioxItemVisual } from '../anatomy.js';
 import type { NavioxAppearance, NavioxPaletteVariant, NavioxSystemThemes, NavioxThemeDefinition, NavioxThemeName, NavioxSearchPosition, NavioxSearchStyle, NavioxBackdrop, NavioxPreviewPlacement } from '../theme.js';
 
@@ -48,11 +50,17 @@ export interface NavioxPaletteProps {
   anatomy?: NavioxPaletteAnatomy;
   /** Item-id keyed icon treatments and badges. Does not modify core command data. */
   visuals?: Readonly<Record<string, NavioxItemVisual>>;
+  /** Optional contextual actions for the currently selected result. */
+  contextActions?: NavioxContextActions;
+  /** Shortcut inside an open palette (default Mod+K); set to empty to disable. */
+  actionShortcut?: string;
   variant?: NavioxPaletteVariant;
   size?: 'regular' | 'wide';
   dir?: 'ltr' | 'rtl';
   vimNavigation?: boolean;
   groupNavigation?: boolean;
+  /** Hide collapsible group buttons while retaining semantic result sections. */
+  showGroupControls?: boolean;
   shouldFilter?: boolean;
   /** For v-model: initial and subsequent external open-state changes. */
   modelValue?: boolean;
@@ -67,6 +75,8 @@ export interface NavioxPaletteExpose {
   close(): void;
   toggle(): void;
   focusSearch(): void;
+  openActions(): void;
+  closeActions(): void;
 }
 
 /** A Vue 3 command palette. DOM, focus, presentation and routing stay in the adapter. */
@@ -95,11 +105,14 @@ export const NavioxPalette = defineComponent({
     appearance: { type: Object as PropType<NavioxAppearance>, default: undefined },
     anatomy: { type: Object as PropType<NavioxPaletteAnatomy>, default: undefined },
     visuals: { type: Object as PropType<Readonly<Record<string, NavioxItemVisual>>>, default: undefined },
+    contextActions: { type: [Array, Function] as PropType<NavioxContextActions>, default: undefined },
+    actionShortcut: { type: String, default: 'Mod+K' },
     variant: { type: String as PropType<NavioxPaletteVariant>, default: 'floating' },
     size: { type: String as PropType<'regular' | 'wide'>, default: 'regular' },
     dir: { type: String as PropType<'ltr' | 'rtl'>, default: 'ltr' },
     vimNavigation: { type: Boolean, default: false },
     groupNavigation: { type: Boolean, default: false },
+    showGroupControls: { type: Boolean, default: true },
     shouldFilter: { type: Boolean, default: true },
     modelValue: { type: Boolean, default: undefined },
     teleportTo: { type: String, default: 'body' },
@@ -111,6 +124,7 @@ export const NavioxPalette = defineComponent({
     select: (_item: NavioxItem) => true,
     navigate: (_item: NavioxItem) => true,
     execute: (_result: NavioxExecutionResult) => true,
+    action: (_action: NavioxContextAction, _item: NavioxItem) => true,
   },
   setup(props, { emit, expose, slots }) {
     const platform: 'mac' | 'other' = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent)
@@ -146,6 +160,7 @@ export const NavioxPalette = defineComponent({
       !props.searchDivider && 'naviox-search-no-divider',
       `naviox-search-${props.searchStyle}`,
       `naviox-preview-${props.previewPlacement}`,
+      props.anatomy?.actions?.placement === 'left' && 'naviox-actions-left',
     ]);
     const dialogStyle = computed(() => ({
       ...resolvedTheme.value.style,
@@ -158,23 +173,105 @@ export const NavioxPalette = defineComponent({
     const onSchemeChange = (event: MediaQueryListEvent) => { prefersDark.value = event.matches; };
     const dialog = ref<HTMLDialogElement | null>(null);
     const input = ref<HTMLInputElement | null>(null);
+    const actionSearch = ref<HTMLInputElement | null>(null);
+    const actionPanel = ref<HTMLElement | null>(null);
+    const actionsOpen = ref(false);
+    const actionQuery = ref('');
+    const actionActiveId = ref<string | null>(null);
+    const actionPending = ref(false);
+    const actionError = ref('');
+    const actionGeneration = ref(0);
     const results = ref<HTMLElement | null>(null);
     const focusBefore = shallowRef<HTMLElement | null>(null);
     const id = useId().replace(/[^a-zA-Z0-9_-]/g, '-');
     const listId = `${id}-list`;
     const labelId = `${id}-label`;
     const hintId = `${id}-hint`;
+    const actionListId = `${id}-actions`;
+    const actionOptionId = (value: string) => `${id}-action-${Array.from(value, char => char.codePointAt(0)!.toString(16)).join('-')}`;
     let dialogSyncGeneration = 0;
     let programmaticClose = false;
     const optionId = (item: NavioxItem) => `${id}-item-${Array.from(item.id, char => char.codePointAt(0)!.toString(16)).join('-')}`;
     const isFavorite = (item: NavioxItem) => state.value.favoriteIds.includes(item.id);
     const isPinned = (item: NavioxItem) => state.value.pinnedIds.includes(item.id);
 
+    const selectedItem = computed(() => state.value.results.find((item) => item.id === state.value.activeId));
+    const availableActions = computed<readonly NavioxContextAction[]>(() => {
+      const current = selectedItem.value;
+      if (!current || current.disabled || current.readOnly || !props.contextActions) return [];
+      return typeof props.contextActions === 'function' ? props.contextActions(current) : props.contextActions;
+    });
+    const filteredActions = computed(() => filterNavioxActions(availableActions.value, actionQuery.value));
+    const actionShortcutLabel = computed(() => props.actionShortcut.replace(/Mod/i, platform === 'mac' ? '⌘' : 'Ctrl'));
+
+    function openActions(): void {
+      if (!state.value.open || !selectedItem.value || !availableActions.value.some((action) => !action.disabled)) return;
+      actionQuery.value = ''; actionError.value = '';
+      actionActiveId.value = nextNavioxActionId(availableActions.value, null, 'first');
+      actionsOpen.value = true;
+      void nextTick(() => actionSearch.value?.focus({ preventScroll: true }));
+    }
+    function closeActions(restoreFocus = true): void {
+      if (!actionsOpen.value) return;
+      ++actionGeneration.value;
+      actionsOpen.value = false; actionQuery.value = ''; actionError.value = '';
+      actionPending.value = false;
+      if (restoreFocus && state.value.open) void nextTick(() => input.value?.focus({ preventScroll: true }));
+    }
+    async function activateAction(action?: NavioxContextAction): Promise<void> {
+      const item = selectedItem.value;
+      if (!item || !action || action.disabled || actionPending.value) return;
+      const generation = ++actionGeneration.value;
+      actionPending.value = true; actionError.value = '';
+      try {
+        await action.perform(item);
+        if (generation !== actionGeneration.value) return;
+        emit('action', action, item);
+        closeActions();
+      } catch {
+        if (generation === actionGeneration.value) actionError.value = 'Action failed. Please try again.';
+      } finally {
+        if (generation === actionGeneration.value) actionPending.value = false;
+      }
+    }
+    function onActionKey(event: KeyboardEvent): void {
+      if (event.isComposing || event.key === 'Process') return;
+      const hotkey = filteredActions.value.find((action) => !action.disabled && action.shortcut &&
+        matchesNavioxActionShortcut(event, action.shortcut, platform));
+      if (hotkey) {
+        event.preventDefault(); event.stopPropagation();
+        void activateAction(hotkey); return;
+      }
+      let direction: 'next' | 'previous' | 'first' | 'last' | null = null;
+      if (event.key === 'ArrowDown') direction = 'next';
+      if (event.key === 'ArrowUp') direction = 'previous';
+      if (event.key === 'Home') direction = 'first';
+      if (event.key === 'End') direction = 'last';
+      if (direction) {
+        event.preventDefault(); event.stopPropagation();
+        actionActiveId.value = nextNavioxActionId(filteredActions.value, actionActiveId.value, direction);
+      } else if (event.key === 'Enter') {
+        event.preventDefault(); event.stopPropagation();
+        void activateAction(filteredActions.value.find((action) => action.id === actionActiveId.value));
+      } else if (event.key === 'Escape') {
+        event.preventDefault(); event.stopPropagation(); closeActions();
+      } else if (event.key === 'Tab') {
+        // Avoid the dialog's outer focus-wrap moving focus behind the inert action view.
+        event.stopPropagation();
+        // Keep the action subview's Tab traversal inside itself, not the covered palette.
+        const controls = Array.from(actionPanel.value?.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled])') ?? []);
+        if (!controls.length) return;
+        const focusIndex = controls.indexOf(document.activeElement as HTMLElement);
+        if ((event.shiftKey && focusIndex === 0) || (!event.shiftKey && focusIndex === controls.length - 1)) {
+          event.preventDefault(); (event.shiftKey ? controls[controls.length - 1] : controls[0])?.focus();
+        }
+      }
+    }
     function open(): void { controller.open(); }
     function close(): void { controller.close(); }
     function toggle(): void { controller.toggle(); }
     function focusSearch(): void { input.value?.focus(); }
-    expose({ controller, open, close, toggle, focusSearch } satisfies NavioxPaletteExpose);
+    expose({ controller, open, close, toggle, focusSearch, openActions, closeActions: () => closeActions() } satisfies NavioxPaletteExpose);
 
     function handleActivation(outcome: NavioxActivationResult): void {
       if (outcome.kind === 'selected' && outcome.item) emit('select', outcome.item);
@@ -213,6 +310,16 @@ export const NavioxPalette = defineComponent({
 
     function onDocumentKey(event: KeyboardEvent): void {
       const target = event.target as HTMLElement | null;
+      if (state.value.open && dialog.value?.contains(target) &&
+        matchesNavioxActionShortcut(event, props.actionShortcut, platform) && availableActions.value.length) {
+        event.preventDefault(); event.stopPropagation();
+        if (actionsOpen.value) closeActions(); else openActions();
+        return;
+      }
+      if (actionsOpen.value && state.value.open && dialog.value?.contains(target)) {
+        if (event.key === 'Escape') { event.preventDefault(); closeActions(); }
+        return;
+      }
       const editable = !!target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
       if (event.isComposing || event.defaultPrevented || (editable && !event.metaKey && !event.ctrlKey && !event.altKey)) return;
       const descriptor: NavioxShortcutEvent = {
@@ -239,6 +346,7 @@ export const NavioxPalette = defineComponent({
         await nextTick();
         input.value?.focus({ preventScroll: true });
       } else if (!state.value.open && node.open) {
+        closeActions(false);
         programmaticClose = true;
         node.close();
         if (focusBefore.value?.isConnected) focusBefore.value.focus({ preventScroll: true });
@@ -248,6 +356,7 @@ export const NavioxPalette = defineComponent({
 
     function onCancel(event: Event): void {
       event.preventDefault();
+      if (actionsOpen.value) { closeActions(); return; }
       if (!controller.back()) controller.close();
     }
 
@@ -266,13 +375,18 @@ export const NavioxPalette = defineComponent({
       }
       void syncDialog();
     }, { flush: 'sync' });
-    watch(() => state.value.activeId, (id) => {
+    watch(() => state.value.activeId, (id, previous) => {
+      if (actionsOpen.value && id !== previous) closeActions();
       if (!id || !state.value.open || typeof document === 'undefined') return;
       void nextTick(() => {
         const match = document.getElementById(optionId({ id } as NavioxItem));
         if (match && results.value?.contains(match)) match.scrollIntoView({ block: 'nearest' });
       });
     }, { flush: 'post' });
+    watch(filteredActions, (items) => {
+      if (actionsOpen.value && !items.some((action) => action.id === actionActiveId.value && !action.disabled))
+        actionActiveId.value = nextNavioxActionId(items, null, 'first');
+    });
     watch(() => props.modelValue, (next) => {
       if (next === undefined || next === controller.getState().open) return;
       if (next) open(); else close();
@@ -294,6 +408,7 @@ export const NavioxPalette = defineComponent({
     onBeforeUnmount(() => {
       themeMedia?.removeEventListener?.('change', onSchemeChange);
       document.removeEventListener('keydown', onDocumentKey);
+      closeActions(false);
       // Native modal dialogs must be closed before unmount to release top layer.
       if (dialog.value?.open) dialog.value.close();
       if (focusBefore.value?.isConnected) focusBefore.value.focus({ preventScroll: true });
@@ -409,6 +524,60 @@ export const NavioxPalette = defineComponent({
       ]);
     }
 
+    function renderContextActions(): VNode | null {
+      const item = selectedItem.value;
+      if (!actionsOpen.value || !item) return null;
+      const groups = new Map<string, NavioxContextAction[]>();
+      for (const action of filteredActions.value) {
+        const group = action.group || 'Actions';
+        groups.set(group, [...(groups.get(group) ?? []), action]);
+      }
+      return h('section', {
+        ref: actionPanel, class: 'naviox-context-actions', role: 'region',
+        'aria-label': `Actions for ${item.title}`, 'data-naviox-part': 'context-actions',
+        onKeydown: onActionKey,
+      }, [
+        h('div', { class: 'naviox-actions-heading' }, [
+          h('span', [icon('back', 15), h('strong', item.title), h('small', 'Actions')]),
+          h('button', { type: 'button', class: 'naviox-actions-dismiss', 'aria-label': 'Back to results', onClick: () => closeActions() }, [icon('close', 16)]),
+        ]),
+        h('div', { id: actionListId, class: 'naviox-actions-list', role: 'listbox', 'aria-label': 'Available actions' },
+          [...groups].map(([group, actions]) => h('div', { class: 'naviox-actions-group', role: 'group', 'aria-label': group, key: group }, [
+            h('span', { class: 'naviox-actions-group-title', 'aria-hidden': 'true' }, group),
+            ...actions.map((action) => h('div', {
+              id: actionOptionId(action.id), key: action.id, role: 'option',
+              class: ['naviox-action-row', actionActiveId.value === action.id && 'is-active', action.disabled && 'is-disabled'],
+              'aria-selected': actionActiveId.value === action.id ? 'true' : 'false',
+              'aria-disabled': action.disabled ? 'true' : undefined,
+              onPointerenter: (event: PointerEvent) => { if (!action.disabled && event.pointerType !== 'touch') actionActiveId.value = action.id; },
+              onMousedown: (event: MouseEvent) => event.preventDefault(),
+              onClick: () => { if (!action.disabled) void activateAction(action); },
+            }, slots.action?.({ action, item, active: actionActiveId.value === action.id, activate: () => activateAction(action) }) ?? [
+              icon(action.icon ?? 'command', 16),
+              h('span', { class: 'naviox-action-copy' }, [h('strong', action.title), action.description && h('small', action.description)]),
+              action.shortcut && h('kbd', { class: 'naviox-action-shortcut' }, action.shortcut.replace(/Mod/i, platform === 'mac' ? '⌘' : 'Ctrl')),
+            ])),
+          ]))),
+        !filteredActions.value.length && h('p', { class: 'naviox-actions-empty', role: 'status' }, 'No matching actions'),
+        actionError.value && h('p', { class: 'naviox-actions-error', role: 'alert' }, actionError.value),
+        h('div', { class: 'naviox-actions-searchbar' }, [
+          icon('search', 16),
+          h('input', {
+            ref: actionSearch, type: 'search', role: 'combobox',
+            class: 'naviox-actions-search-input', placeholder: 'Search for actions…',
+            'aria-label': 'Search actions', 'aria-controls': actionListId,
+            'aria-expanded': 'true', 'aria-autocomplete': 'list',
+            'aria-activedescendant': actionActiveId.value ? actionOptionId(actionActiveId.value) : undefined,
+            value: actionQuery.value,
+            disabled: actionPending.value,
+            onInput: (event: Event) => { actionQuery.value = (event.target as HTMLInputElement).value; },
+          }),
+          actionPending.value && h('span', { class: 'naviox-actions-busy', role: 'status' }, 'Running…'),
+          h('kbd', 'Esc'),
+        ]),
+      ]);
+    }
+
     function renderDialog(): VNode {
       const snapshot = state.value;
       const selected = snapshot.results.find((item) => item.id === snapshot.activeId);
@@ -429,7 +598,7 @@ export const NavioxPalette = defineComponent({
           ]),
           // Disclosures belong OUTSIDE the listbox. ARIA listboxes contain only
           // options (possibly grouped), never buttons or other widgets.
-          !!groups.length && h('div', { class: 'naviox-group-controls', role: 'group', 'aria-label': 'Result group filters' }, groups.map((section) => h('button', {
+          props.showGroupControls && !!groups.length && h('div', { class: 'naviox-group-controls', role: 'group', 'aria-label': 'Result group filters' }, groups.map((section) => h('button', {
             key: section.id, type: 'button', class: 'naviox-group-toggle',
             'aria-expanded': String(!section.collapsed),
             'aria-label': `${section.collapsed ? 'Expand' : 'Collapse'} ${section.title || 'Results'} group`,
@@ -455,7 +624,9 @@ export const NavioxPalette = defineComponent({
         h('span', { class: 'naviox-footer-count', role: 'status', 'aria-live': 'polite' }, snapshot.execution.status === 'running'
           ? snapshot.execution.progress?.message ?? 'Running command…'
           : `${snapshot.totalResults} ${snapshot.totalResults === 1 ? 'result' : 'results'}`),
-        h('span', { class: 'naviox-footer-help' }, [h('kbd', '↑'), h('kbd', '↓'), 'Navigate', h('kbd', '↵'), 'Open', h('kbd', 'Esc'), 'Close']),
+        h('span', { class: 'naviox-footer-help' }, [h('kbd', '↑'), h('kbd', '↓'), 'Navigate', h('kbd', '↵'), 'Open',
+          availableActions.value.some((action) => !action.disabled) && h('button', { type: 'button', class: 'naviox-actions-trigger', onClick: openActions, 'aria-label': `Actions for ${selectedItem.value?.title ?? 'selected item'}` }, ['Actions', h('kbd', actionShortcutLabel.value)]),
+          h('kbd', 'Esc'), 'Close']),
       ]);
       return h('dialog', {
         dir: props.dir, ref: dialog,
@@ -475,17 +646,25 @@ export const NavioxPalette = defineComponent({
         },
         onClick: onDialogClick,
       }, [h('div', { class: 'naviox-shell' }, [
-        ((props.searchPosition === 'top' || (props.searchPosition === 'custom' && !customSearch)) && search),
+        ((props.searchPosition === 'top' || (props.searchPosition === 'custom' && !customSearch)) && (actionsOpen.value ? h('div', { inert: true, class: 'naviox-action-inert-search' }, [search]) : search)),
         h('div', { id: hintId, class: 'naviox-sr-only' }, 'Use up and down arrows to navigate; Enter to open; Escape to go back or close.'),
-        slots.header?.({ state: snapshot, controller, search }),
-        slots.content?.({ state: snapshot, controller, activate, search }) ?? defaultContent,
+        ...(props.contextActions ? [h('div', { class: 'naviox-actions-underlay', inert: actionsOpen.value ? true : undefined }, [
+          slots.header?.({ state: snapshot, controller, search }),
+          slots.content?.({ state: snapshot, controller, activate, search }) ?? defaultContent,
+        ])] : [
+          slots.header?.({ state: snapshot, controller, search }),
+          slots.content?.({ state: snapshot, controller, activate, search }) ?? defaultContent,
+        ]),
         snapshot.execution.status === 'running' && h('div', { class: 'naviox-progress', role: 'status' }, [
           h('span', snapshot.execution.progress?.message ?? 'Working…'),
           h('button', { type: 'button', onClick: () => controller.cancelExecution() }, 'Cancel'),
         ]),
         snapshot.execution.status === 'error' && h('div', { class: 'naviox-error', role: 'alert' }, 'This command failed. You can retry.'),
-        (props.searchPosition === 'bottom' && search),
-        slots.footer?.({ state: snapshot, controller, search }) ?? defaultFooter,
+        (props.searchPosition === 'bottom' && (actionsOpen.value ? h('div', { inert: true, class: 'naviox-action-inert-search' }, [search]) : search)),
+        ...(props.contextActions ? [h('div', { class: 'naviox-actions-footer-wrap', inert: actionsOpen.value ? true : undefined }, [
+          slots.footer?.({ state: snapshot, controller, search, openActions, actionsCount: availableActions.value.length, actionShortcut: actionShortcutLabel.value }) ?? defaultFooter,
+        ])] : [slots.footer?.({ state: snapshot, controller, search, openActions, actionsCount: 0, actionShortcut: actionShortcutLabel.value }) ?? defaultFooter]),
+        renderContextActions(),
       ])]);
     }
 

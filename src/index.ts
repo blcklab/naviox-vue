@@ -26,3 +26,7 @@ export type { NavioxPaletteAnatomy, NavioxItemVisual, NavioxResultIconMode, Navi
 export { defineNavioxMegaMenuAnatomy, defineNavioxAutocompleteAnatomy,
   resolveMegaMenuAnatomyStyle, resolveAutocompleteAnatomyStyle } from './navigation-anatomy.js';
 export type { NavioxMegaMenuAnatomy, NavioxAutocompleteAnatomy } from './navigation-anatomy.js';
+
+export { navioxPrecisionFlavor } from './precision.js';
+export { filterNavioxActions, nextNavioxActionId, matchesNavioxActionShortcut } from './context-actions.js';
+export type { NavioxContextAction, NavioxContextActions } from './context-actions.js';

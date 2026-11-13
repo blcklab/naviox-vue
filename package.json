@@ -1,6 +1,6 @@
 {
   "name": "@blcklab/naviox-vue",
-  "version": "0.1.0-alpha.18",
+  "version": "0.1.0-alpha.19",
   "description": "Naviox command palette, preview-rich mega-menu and contextual autocomplete, with cinematic themes",
   "type": "module",
   "sideEffects": [
