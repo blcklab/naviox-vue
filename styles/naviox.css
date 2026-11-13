@@ -71,10 +71,15 @@
 .naviox-dialog.naviox-preview-left .naviox-preview { order: -1; border-left: 0; border-right: 1px solid var(--nx-border); }
 .naviox-dialog.naviox-preview-bottom .naviox-layout { display: flex; flex-direction: column; }
 .naviox-dialog.naviox-preview-bottom .naviox-results-pane { flex: 1 1 auto; min-height: 0; }
-.naviox-dialog.naviox-preview-bottom .naviox-preview { flex: 0 1 38%; min-height: 130px; border-left: 0; border-top: 1px solid var(--nx-border); }
+.naviox-dialog.naviox-preview-bottom .naviox-preview { flex: 0 0 min(42%, 220px); min-height: 130px; border-left: 0; border-top: 1px solid var(--nx-border); }
+/* A disabled preview must consume no track even when a caller keeps a left or bottom placement. */
+.naviox-dialog.naviox-no-preview .naviox-layout { display: grid; grid-template-columns: minmax(0,1fr); }
 .naviox-dialog.naviox-search-bottom .naviox-layout { order:1; }
 .naviox-dialog.naviox-search-bottom .naviox-progress, .naviox-dialog.naviox-search-bottom .naviox-error { order:2; }
 .naviox-dialog.naviox-search-bottom .naviox-footer { order:5; }
+/* Custom footer slots may render their own <footer> without the default .naviox-footer class.
+   The footer is always the final direct child of .naviox-shell. */
+.naviox-dialog.naviox-search-bottom .naviox-shell > :last-child { order:5; }
 
 .naviox-clear,.naviox-dismiss { border:0; cursor:pointer; display:flex; align-items:center;justify-content:center; background:transparent;color:var(--nx-muted); }
 .naviox-clear { padding:7px; border-radius:7px; }
@@ -372,7 +377,7 @@
 }
 .naviox-dialog .naviox-item-icon[data-naviox-shape="circle"] {border-radius:50%;}
 .naviox-dialog .naviox-item-icon[data-naviox-shape="square"] {border-radius:2px;}
-.naviox-dialog .naviox-item-icon[data-naviox-mode="plain"] {background:transparent;border-color:transparent;}
+.naviox-dialog .naviox-item-icon[data-naviox-mode="plain"] {background:transparent;border-color:transparent;color:var(--nx-text);}
 .naviox-dialog .naviox-item-icon[data-naviox-mode="outline"] {background:transparent;}
 .naviox-dialog .naviox-item-icon[data-naviox-mode="thumbnail"] {padding:0;}
 .naviox-dialog .naviox-item-icon img {width:100%;height:100%;display:block;object-fit:cover;}

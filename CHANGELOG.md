@@ -1,3 +1,11 @@
+## 0.1.0-alpha.18 — M9.2 layout corrections
+
+- Fixed preview-disabled layouts reserving an empty column with alternate preview placement.
+- Fixed the ordering of custom footer slots when search is positioned at the bottom.
+- Preserved contrast of plain icons when tile visuals include a white foreground.
+- Improved bottom-preview height for stacked/Aurora-style layouts.
+- Includes the MegaMenu/Autocomplete anatomy work of alpha.17, with no new core dependency.
+
 ## 0.1.0-alpha.16 — Palette anatomy and native result visuals
 
 - Added typed `anatomy` and `visuals` options for the default palette, with colored icon tiles, image thumbnails, monograms, badges, controllable row geometry and preview anatomy.

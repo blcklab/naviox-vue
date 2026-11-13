@@ -315,7 +315,8 @@ export const NavioxPalette = defineComponent({
         'data-naviox-shape': shape,
         style: {
           ...(visual?.background && mode !== 'plain' && mode !== 'outline' ? { background: visual.background } : {}),
-          ...(visual?.foreground ? { color: visual.foreground } : {}),
+          // Plain icons use the theme's foreground: tile-only white glyphs would disappear on paper.
+          ...(visual?.foreground && mode !== 'plain' ? { color: visual.foreground } : {}),
           ...(visual?.borderColor ? { borderColor: visual.borderColor } : {}),
         },
       }, content);
